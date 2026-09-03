@@ -1,0 +1,8 @@
+fastapi>=0.100.0
+uvicorn>=0.22.0
+smartapi-python
+pyotp
+requests
+websockets
+pydantic
+aiohttp

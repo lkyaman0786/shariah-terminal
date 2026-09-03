@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shariah Shares Live Market Terminal | Angel One & Musaffa Halal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=3.1.0">
+    <script>
+        // Strict Auth Guard: direct unauthenticated clients to /login immediately
+        (function() {
+            const token = sessionStorage.getItem('terminal_token');
+            if (!token) {
+                window.location.replace('/login');
+                return;
+            }
+            const userRaw = sessionStorage.getItem('terminal_user');
+            let userId = null;
+            try {
+                const u = JSON.parse(userRaw);
+                userId = u.id || u.email;
+            } catch(e) {}
+
+            fetch('/api/terminal/verify_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (!res || !res.valid) {
+                    sessionStorage.removeItem('terminal_token');
+                    sessionStorage.removeItem('terminal_user');
+                    if (res && res.reason === 'expired') {
+                        alert(res.message || 'Aapka 7-day free trial / plan expire ho chuka hai. Kripya naya plan activate karein.');
+                        window.location.replace('/pricing?expired=true');
+                    } else {
+                        window.location.replace('/login');
+                    }
+                } else if (res.user) {
+                    sessionStorage.setItem('terminal_user', JSON.stringify(res.user));
+                    if (window.updateTerminalUserBadge) {
+                        window.updateTerminalUserBadge(res.user);
+                    }
+                }
+            })
+            .catch(() => {});
+        })();
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>SHARIAH <span>TERMINAL</span></h1>
+                    <p class="subtitle">Musaffa Halal Verified • NSE Equities Real-Time Feed</p>
+                </div>
+            </div>
+
+            <!-- Live Market Clock -->
+            <div class="market-time-pill">
+                <i class="fa-regular fa-clock"></i>
+                <span id="liveClock">--:--:--</span>
+                <span class="tz-badge">IST</span>
+            </div>
+
+            <div class="header-actions">
+                <div class="stream-badge" id="streamStatusBadge">
+                    <span class="status-dot pulse"></span>
+                    <span id="streamStatusText">Connecting...</span>
+                </div>
+
+                <a href="https://musaffa.com/" target="_blank" class="btn btn-outline" style="border-color: rgba(0, 230, 118, 0.4); color: #00e676;" title="Musaffa Halal Screener">
+                    <i class="fa-solid fa-certificate"></i>
+                    <span>Musaffa Halal</span>
+                </a>
+
+                <a href="/pricing" class="btn btn-outline" style="border-color: rgba(0, 210, 255, 0.4); color: #00d2ff;" title="View Plans & Pricing">
+                    <i class="fa-solid fa-tag"></i>
+                    <span>Plans & Pricing</span>
+                </a>
+
+                <button class="btn btn-icon" id="btnRefreshTokens" title="Sync Live Rates">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+
+                <!-- Logged-in user info + expiry badge + logout -->
+                <div id="terminalUserBadge" style="display:flex; align-items:center; gap:8px; background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.2); border-radius:8px; padding:5px 12px; font-size:0.78rem;">
+                    <i class="fa-solid fa-circle-user" style="color:#00d2ff;"></i>
+                    <span id="terminalUserName" style="font-weight:600;">Member</span>
+                    <span id="terminalUserPlan" style="background:rgba(0,230,118,0.15); color:#00e676; padding:2px 7px; border-radius:12px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">PRO</span>
+                    <div id="terminalExpiryBadge" class="expiry-pill" style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,209,102,0.15); border:1px solid rgba(255,209,102,0.3); color:#ffd166; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:700;" title="Plan validity">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                        <span id="terminalExpiryText">-- Days Left</span>
+                    </div>
+                    <button onclick="doTerminalLogout()" style="background:none;border:none;color:rgba(232,236,244,0.5);cursor:pointer;font-size:0.75rem;margin-left:4px;" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI Hero Bar -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon icon-emerald"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="kpi-content">
+                    <span class="kpi-label">Shariah Universe</span>
+                    <span class="kpi-value" id="kpiTotalStocks">2,443</span>
+                    <span class="kpi-sub">100% Musaffa & AAOIFI Halal</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon icon-up"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                <div class="kpi-content">
+                    <span class="kpi-label">Strong Buy Stocks</span>
+                    <span class="kpi-value text-up" id="kpiStrongBuyCount">0</span>
+                    <span class="kpi-sub text-up" id="kpiTopGainer">Top Pick</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon icon-down"><i class="fa-solid fa-bolt"></i></div>
+                <div class="kpi-content">
+                    <span class="kpi-label">Strong Sell Stocks</span>
+                    <span class="kpi-value text-down" id="kpiStrongSellCount">0</span>
+                    <span class="kpi-sub text-down" id="kpiTopLoser">Top Alert</span>
+                </div>
+            </div>
+
+            <div class="kpi-card adv-dec-card">
+                <div class="kpi-content full-width">
+                    <div class="adv-dec-header">
+                        <span class="kpi-label">Market Breadth</span>
+                        <span class="adv-dec-ratio"><span class="text-up" id="advCount">0</span> Adv / <span class="text-down" id="decCount">0</span> Dec</span>
+                    </div>
+                    <div class="adv-dec-bar-bg">
+                        <div class="adv-dec-bar-fill" id="advDecBar" style="width: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search, Filters, Timeframes & Controls -->
+        <section class="control-panel">
+            <div class="search-sort-row">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Search by stock (e.g. CHENNPETRO, MGL, FILATEX, INFY), company, sector...">
+                    <button class="clear-search-btn" id="btnClearSearch"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <!-- Mode Switcher -->
+                <div class="mode-switcher">
+                    <button class="mode-btn active" id="btnModeOverview" data-mode="overview">
+                        <i class="fa-solid fa-chart-simple"></i> Overview & Rates
+                    </button>
+                    <button class="mode-btn" id="btnModeIndicators" data-mode="indicators">
+                        <i class="fa-solid fa-chart-line"></i> Live Technicals
+                    </button>
+                    <button class="mode-btn" id="btnModePortfolio" data-mode="portfolio">
+                        <i class="fa-solid fa-briefcase"></i> My Portfolio
+                    </button>
+                </div>
+
+                <div class="sort-controls">
+                    <label class="ctrl-label"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort:</label>
+                    <select id="sortSelect" class="custom-select">
+                        <option value="signal_buy_desc">🔥 Strong Buy First</option>
+                        <option value="signal_sell_desc">💥 Strong Sell First</option>
+                        <option value="rrb_ratio_desc">🎯 Highest RRB Ratio (LTP / MultiSmaEmaBb)</option>
+                        <option value="rrb_ratio_asc">🎯 Lowest RRB Ratio (Discount to MultiSmaEmaBb)</option>
+                        <option value="pchange_desc">% Gainers (High to Low)</option>
+                        <option value="pchange_asc">% Losers (Low to High)</option>
+                        <option value="mcap_desc">Market Cap (High to Low)</option>
+                        <option value="ltp_desc">Price: High to Low</option>
+                        <option value="ltp_asc">Price: Low to High</option>
+                        <option value="symbol_asc">Symbol (A - Z)</option>
+                        <option value="volume_desc">Highest Volume</option>
+                    </select>
+                </div>
+
+                <div class="view-toggles">
+                    <button class="toggle-btn active" id="btnViewTable" title="Table View"><i class="fa-solid fa-table-list"></i></button>
+                    <button class="toggle-btn" id="btnViewGrid" title="Grid Cards View"><i class="fa-solid fa-grip"></i></button>
+                    <button class="toggle-btn" id="btnPinnedOnly" title="Pinned Watchlist Only"><i class="fa-solid fa-star"></i> <span id="pinnedCount">0</span></button>
+                </div>
+            </div>
+
+            <!-- Volume Filter Row -->
+            <div class="volume-filter-row" style="display: flex; align-items: center; gap: 12px; padding-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                <div class="filter-group-label"><i class="fa-solid fa-chart-bar"></i> Min Volume Filter:</div>
+                <div class="volume-pills" style="display: flex; gap: 8px;">
+                    <button class="vol-pill active" data-minvol="0">All Stocks</button>
+                    <button class="vol-pill" data-minvol="10000">10k+ Vol</button>
+                    <button class="vol-pill" data-minvol="50000">50k+ Vol</button>
+                    <button class="vol-pill" data-minvol="100000">100k+ Vol (1L+)</button>
+                    <button class="vol-pill" data-minvol="500000">500k+ Vol (5L+)</button>
+                    <button class="vol-pill" data-minvol="1000000">1M+ Vol (10L+)</button>
+                </div>
+            </div>
+
+            <!-- Shariah Compliance Filter Row -->
+            <div class="shariah-filter-row">
+                <div class="filter-group-label"><i class="fa-solid fa-moon"></i> Shariah Status:</div>
+                <div class="shariah-pills">
+                    <button class="shariah-pill active" data-shariah="HALAL"><i class="fa-solid fa-certificate"></i> ✨ 100% Halal Verified <span class="badge" id="badgeHalalOnly">0</span></button>
+                    <button class="shariah-pill not-halal" data-shariah="NOT HALAL"><i class="fa-solid fa-ban"></i> 🔴 Not Halal <span class="badge" id="badgeNotHalal">0</span></button>
+                    <button class="shariah-pill" data-shariah="ALL">All Equities <span class="badge" id="badgeAllShariah">2443</span></button>
+                </div>
+            </div>
+
+            <!-- Time Frame Selector Row (15 Min, 1 Hour, 4 Hour, 1 Day, 1 Week, 1 Month) -->
+            <div class="timeframe-filter-row">
+                <div class="filter-group-label"><i class="fa-solid fa-calendar-days"></i> Time Frame:</div>
+                <div class="timeframe-pills">
+                    <button class="tf-pill" data-tf="15m"><i class="fa-solid fa-clock"></i> 15 Min</button>
+                    <button class="tf-pill" data-tf="1h"><i class="fa-solid fa-clock"></i> 1 Hour</button>
+                    <button class="tf-pill" data-tf="4h"><i class="fa-solid fa-clock"></i> 4 Hour</button>
+                    <button class="tf-pill active" data-tf="1d"><i class="fa-solid fa-sun"></i> 1 Day (Daily)</button>
+                    <button class="tf-pill" data-tf="1w"><i class="fa-solid fa-calendar-week"></i> 1 Week (Weekly)</button>
+                    <button class="tf-pill" data-tf="1m"><i class="fa-solid fa-calendar"></i> 1 Month (Monthly)</button>
+                </div>
+            </div>
+
+            <!-- Technical Signal Filter Bar -->
+            <div class="signal-filter-row">
+                <div class="filter-group-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Signal Filter:</div>
+                <div class="signal-pills">
+                    <button class="signal-pill active" data-signal="ALL">All Signals <span class="badge" id="badgeSignalAll">2443</span></button>
+                    <button class="signal-pill strong-buy" data-signal="STRONG BUY"><i class="fa-solid fa-fire"></i> Strong Buy <span class="badge" id="badgeSignalStrongBuy">0</span></button>
+                    <button class="signal-pill buy" data-signal="BUY"><i class="fa-solid fa-arrow-trend-up"></i> Buy <span class="badge" id="badgeSignalBuy">0</span></button>
+                    <button class="signal-pill neutral" data-signal="NEUTRAL">Neutral <span class="badge" id="badgeSignalNeutral">0</span></button>
+                    <button class="signal-pill sell" data-signal="SELL"><i class="fa-solid fa-arrow-trend-down"></i> Sell <span class="badge" id="badgeSignalSell">0</span></button>
+                    <button class="signal-pill strong-sell" data-signal="STRONG SELL"><i class="fa-solid fa-bolt"></i> Strong Sell <span class="badge" id="badgeSignalStrongSell">0</span></button>
+                </div>
+            </div>
+
+            <!-- Market Cap Filter Pills -->
+            <div class="mcap-filter-row">
+                <div class="filter-group-label"><i class="fa-solid fa-layer-group"></i> Market Cap:</div>
+                <div class="mcap-pills">
+                    <button class="mcap-pill active" data-mcap="ALL">All Caps <span class="badge" id="badgeAllCap">2443</span></button>
+                    <button class="mcap-pill" data-mcap="Large Cap">Large Cap <span class="badge" id="badgeLargeCap">0</span></button>
+                    <button class="mcap-pill" data-mcap="Mid Cap">Mid Cap <span class="badge" id="badgeMidCap">0</span></button>
+                    <button class="mcap-pill" data-mcap="Small Cap">Small Cap <span class="badge" id="badgeSmallCap">0</span></button>
+                </div>
+            </div>
+
+            <!-- Horizontal Sector Filter Badges -->
+            <div class="sector-scroll-wrapper">
+                <div class="sector-pills" id="sectorPillsContainer">
+                    <button class="sector-pill active" data-sector="ALL">All Sectors <span class="badge">2443</span></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Stock Live Container (Lightning Fast Virtual Render) -->
+        <main class="stock-container">
+            <div class="speed-status-bar">
+                <span id="speedStatusText">Showing 1 - 50 of 2,443 stocks</span>
+                <span class="speed-tag"><i class="fa-solid fa-bolt"></i> Fast Turbo Mode Active</span>
+            </div>
+
+            <!-- Table View -->
+            <div class="table-responsive" id="stockTableView">
+                <table class="fin-table">
+                    <thead id="tableHead">
+                        <!-- Populated dynamically -->
+                    </thead>
+                    <tbody id="stockTableBody">
+                        <!-- Populated via JavaScript (Fast Chunk Render) -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Grid Cards View -->
+            <div class="stock-grid" id="stockGridView" style="display: none;">
+                <!-- Populated via JavaScript -->
+            </div>
+
+            <!-- Portfolio View -->
+            <div class="portfolio-container" id="stockPortfolioView" style="display: none; padding: 20px;">
+                <!-- Dynamically rendered custom portfolio dashboard and list -->
+            </div>
+
+            <!-- Load More Controls -->
+            <div class="load-more-bar" id="loadMoreBar">
+                <button class="btn btn-outline" id="btnLoadMore"><i class="fa-solid fa-plus"></i> Load More Stocks (50+)</button>
+                <button class="btn btn-secondary" id="btnLoadAll"><i class="fa-solid fa-layer-group"></i> Load All</button>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i class="fa-solid fa-filter-circle-xmark"></i>
+                <h3>No stocks found matching the criteria</h3>
+                <p>Try resetting your search or filters.</p>
+                <button class="btn btn-outline" id="btnResetFilters">Reset All Filters</button>
+            </div>
+        </main>
+    </div>
+
+
+
+    <!-- Stock Detail Modal (Fundamentals, Musaffa Halal & Technicals) -->
+    <div class="modal-overlay" id="stockDetailModal">
+        <div class="modal-card modal-large">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="stock-badge" id="modalStockBadge">NSE</span>
+                    <div>
+                        <h3 id="modalStockSymbol">CHENNPETRO - Chennai Petroleum</h3>
+                        <p class="modal-sub" id="modalStockSub">Live Valuation & Financial Health</p>
+                    </div>
+                </div>
+                <div class="modal-header-actions">
+                    <button id="btnAddToPortfolio" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-folder-plus"></i> + Portfolio
+                    </button>
+                    <a id="modalMusaffaLink" href="https://musaffa.com/" target="_blank" class="btn btn-sm btn-outline" style="border-color: rgba(0, 230, 118, 0.4); color: #00e676;">
+                        <i class="fa-solid fa-certificate"></i> Musaffa Halal
+                    </a>
+                    <a id="modalFinologyLink" href="https://ticker.finology.in" target="_blank" class="btn btn-sm btn-outline">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ticker Finology
+                    </a>
+                    <button class="modal-close" id="btnCloseDetailModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <!-- Modal Tab Navigation -->
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" id="tabBtnFundamentals" onclick="window.terminal.switchModalTab('fundamentals')">
+                    <i class="fa-solid fa-chart-pie"></i> Company Fundamentals & Results
+                </button>
+                <button class="modal-tab-btn" id="tabBtnTechnicals" onclick="window.terminal.switchModalTab('technicals')">
+                    <i class="fa-solid fa-chart-line"></i> Live Technicals & Support/Resistance
+                </button>
+            </div>
+            
+            <div class="modal-body" id="modalStockDetailContent">
+                <!-- Dynamically rendered via app.js -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=3.1.0"></script>
+    <script>
+        // Show logged-in user badge and expiry countdown
+        window.updateTerminalUserBadge = function(user) {
+            if (!user) return;
+            const badge = document.getElementById('terminalUserBadge');
+            const nameEl = document.getElementById('terminalUserName');
+            const planEl = document.getElementById('terminalUserPlan');
+            const expBadge = document.getElementById('terminalExpiryBadge');
+            const expText = document.getElementById('terminalExpiryText');
+
+            if (nameEl) nameEl.textContent = user.name || user.email || 'Member';
+            if (planEl) {
+                const plan = (user.plan || 'trial').toUpperCase();
+                planEl.textContent = plan === 'TRIAL' ? 'Free Trial' : plan;
+                planEl.style.background = plan === 'TRIAL' ? 'rgba(249,199,79,0.15)' : 'rgba(0,230,118,0.15)';
+                planEl.style.color = plan === 'TRIAL' ? '#f9c74f' : '#00e676';
+            }
+            if (expBadge && expText) {
+                if (user.is_lifetime) {
+                    expText.textContent = '✨ Lifetime VIP';
+                    expBadge.style.background = 'rgba(168,85,247,0.2)';
+                    expBadge.style.color = '#c084fc';
+                    expBadge.style.borderColor = 'rgba(168,85,247,0.4)';
+                } else if (user.days_left !== undefined) {
+                    if (user.days_left <= 0) {
+                        expText.textContent = '⚠️ Expired';
+                        expBadge.style.background = 'rgba(255,61,113,0.2)';
+                        expBadge.style.color = '#ff3d71';
+                        expBadge.style.borderColor = 'rgba(255,61,113,0.4)';
+                    } else if (user.days_left === 1) {
+                        expText.textContent = '⚠️ 1 Day Left';
+                        expBadge.style.background = 'rgba(255,61,113,0.18)';
+                        expBadge.style.color = '#ff3d71';
+                        expBadge.style.borderColor = 'rgba(255,61,113,0.4)';
+                    } else {
+                        expText.textContent = `⏳ ${user.days_left} Days Left`;
+                        expBadge.style.background = 'rgba(255,209,102,0.15)';
+                        expBadge.style.color = '#ffd166';
+                        expBadge.style.borderColor = 'rgba(255,209,102,0.3)';
+                    }
+                }
+            }
+            if (badge) badge.style.display = 'flex';
+        };
+
+        (function() {
+            const userRaw = sessionStorage.getItem('terminal_user');
+            if (userRaw) {
+                try {
+                    const user = JSON.parse(userRaw);
+                    window.updateTerminalUserBadge(user);
+                } catch(e) {}
+            }
+        })();
+
+        // Continuous Heartbeat: keeps user tracked as "Online Now" in Admin Panel
+        setInterval(() => {
+            const userRaw = sessionStorage.getItem('terminal_user');
+            if (userRaw) {
+                try {
+                    const u = JSON.parse(userRaw);
+                    if (u.id || u.email) {
+                        fetch('/api/terminal/heartbeat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: u.id, email: u.email })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.active === false && data.reason === 'expired') {
+                                alert('Aapka subscription ya trial expire ho chuka hai.');
+                                sessionStorage.clear();
+                                window.location.replace('/pricing?expired=true');
+                            }
+                        })
+                        .catch(() => {});
+                    }
+                } catch(e) {}
+            }
+        }, 15000);
+
+        function doTerminalLogout() {
+            sessionStorage.removeItem('terminal_token');
+            sessionStorage.removeItem('terminal_user');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

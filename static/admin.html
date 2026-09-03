@@ -1,0 +1,2369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Shariah Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #06080e;
+            --sidebar-bg: #0b0e17;
+            --card: rgba(255,255,255,0.04);
+            --card-border: rgba(255,255,255,0.08);
+            --accent: #00d2ff;
+            --green: #00e676;
+            --red: #ff3d71;
+            --purple: #9d4edd;
+            --gold: #f9c74f;
+            --text: #e8ecf4;
+            --text-dim: rgba(232,236,244,0.5);
+            --radius: 12px;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+        }
+        /* Login Gate Overlay */
+        #adminLoginGate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-login-box {
+            background: rgba(13, 17, 23, 0.9);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            width: 380px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+        .admin-login-box h2 { font-size: 1.3rem; margin-bottom: 6px; }
+        .admin-login-box p { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 24px; }
+        .admin-login-box .logo { font-size: 2.5rem; margin-bottom: 16px; }
+        .admin-field {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        .admin-field i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.8rem; }
+        .admin-field input {
+            width: 100%;
+            padding: 12px 14px 12px 38px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.88rem;
+            outline: none;
+        }
+        .admin-field input:focus { border-color: rgba(0, 210, 255, 0.4); }
+        .admin-field input::placeholder { color: rgba(232,236,244,0.3); }
+        .btn-admin-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #00d2ff, #0094ff);
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-admin-login:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,210,255,0.3); }
+        .admin-err { font-size: 0.78rem; color: var(--red); margin-top: 12px; display: none; }
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .sidebar-brand h1 { font-size: 1rem; font-weight: 800; letter-spacing: 0.04em; }
+        .sidebar-brand h1 span { color: var(--accent); }
+        .sidebar-brand p { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; }
+        .sidebar-nav {
+            padding: 12px 0;
+            flex: 1;
+        }
+        .nav-section-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.25);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 12px 20px 6px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            font-size: 0.83rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+        .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0, 210, 255, 0.06); }
+        .nav-item i { width: 16px; text-align: center; }
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(0, 210, 255, 0.15);
+            color: var(--accent);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+        .nav-badge.red { background: rgba(255, 61, 113, 0.15); color: var(--red); }
+        .nav-badge.green { background: rgba(0, 230, 118, 0.15); color: var(--green); }
+        /* Sidebar footer */
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--card-border);
+        }
+        .admin-user-tag {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .admin-avatar { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: #000; }
+        .admin-user-info .name { font-size: 0.8rem; font-weight: 600; }
+        .admin-user-info .role { font-size: 0.65rem; color: var(--accent); }
+        /* Main area */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 32px;
+            min-height: 100vh;
+        }
+        /* Page header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .page-header h2 { font-size: 1.4rem; font-weight: 800; }
+        .page-header p { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+        /* Sections */
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+        /* Stats cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .icon-blue { background: rgba(0, 210, 255, 0.12); color: var(--accent); }
+        .icon-green { background: rgba(0, 230, 118, 0.12); color: var(--green); }
+        .icon-red { background: rgba(255, 61, 113, 0.12); color: var(--red); }
+        .icon-purple { background: rgba(157, 78, 221, 0.12); color: var(--purple); }
+        .icon-gold { background: rgba(249, 199, 79, 0.12); color: var(--gold); }
+        .stat-info .val { font-size: 1.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+        .stat-info .lbl { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+        /* Tables */
+        .admin-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .admin-card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .admin-card-header h3 { font-size: 0.95rem; font-weight: 700; }
+        .admin-card-header p { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th {
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--card-border);
+        }
+        .admin-table td {
+            padding: 12px 16px;
+            font-size: 0.82rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: middle;
+        }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+        /* Status badges */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .status-active { background: rgba(0, 230, 118, 0.12); color: var(--green); }
+        .status-pending { background: rgba(249, 199, 79, 0.12); color: var(--gold); }
+        .status-blocked { background: rgba(255, 61, 113, 0.12); color: var(--red); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        /* Buttons */
+        .btn-sm {
+            padding: 5px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font-size: 0.73rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-sm:hover { background: rgba(255,255,255,0.08); }
+        .btn-sm.green { border-color: rgba(0, 230, 118, 0.3); color: var(--green); }
+        .btn-sm.green:hover { background: rgba(0, 230, 118, 0.1); }
+        .btn-sm.red { border-color: rgba(255, 61, 113, 0.3); color: var(--red); }
+        .btn-sm.red:hover { background: rgba(255, 61, 113, 0.1); }
+        .btn-sm.blue { border-color: rgba(0, 210, 255, 0.3); color: var(--accent); }
+        .btn-sm.blue:hover { background: rgba(0, 210, 255, 0.1); }
+        .btn-sm.purple { border-color: rgba(168, 85, 247, 0.4); color: #c084fc; }
+        .btn-sm.purple:hover { background: rgba(168, 85, 247, 0.15); }
+        /* Filter Pills */
+        .filter-pill {
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            color: var(--text-dim);
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-pill:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+        .filter-pill.active { background: rgba(0,210,255,0.15); border-color: var(--accent); color: #fff; }
+        .filter-pill .badge { background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 10px; font-size: 0.68rem; }
+        /* Toggle switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            content: '';
+            position: absolute;
+            width: 16px; height: 16px;
+            left: 3px; top: 3px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: rgba(0, 230, 118, 0.4); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--green); }
+        /* Form controls */
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .ctrl-row:last-child { border-bottom: none; }
+        .ctrl-info { flex: 1; }
+        .ctrl-info .ctrl-label { font-size: 0.85rem; font-weight: 600; }
+        .ctrl-info .ctrl-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+        .ctrl-action { min-width: 120px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+        /* Number input */
+        .num-input {
+            width: 80px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 7px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-align: center;
+            outline: none;
+        }
+        .num-input:focus { border-color: rgba(0, 210, 255, 0.4); }
+        /* Select */
+        .admin-select {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 7px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.82rem;
+            outline: none;
+        }
+        /* Color coded indicators */
+        .indicator-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+        }
+        .indicator-pill.enabled { border-color: rgba(0, 230, 118, 0.3); background: rgba(0, 230, 118, 0.08); color: var(--green); }
+        .indicator-pill.disabled { border-color: rgba(255, 61, 113, 0.2); color: var(--text-dim); }
+        /* Modal */
+        .admin-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-modal-overlay.open { display: flex; }
+        .admin-modal {
+            background: #0d1117;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 28px;
+            width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .admin-modal h3 { font-size: 1.1rem; margin-bottom: 20px; }
+        .modal-field { margin-bottom: 14px; }
+        .modal-field label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; font-weight: 600; }
+        .modal-field input, .modal-field select, .modal-field textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .modal-field textarea { resize: vertical; min-height: 80px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .btn-modal { padding: 9px 20px; border-radius: 8px; font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-modal.primary { background: var(--accent); color: #000; }
+        .btn-modal.primary:hover { box-shadow: 0 4px 15px rgba(0,210,255,0.3); }
+        .btn-modal.cancel { background: rgba(255,255,255,0.06); color: var(--text); }
+        /* Search bar */
+        .admin-search-bar {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        .admin-search-bar i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem; }
+        .admin-search-bar input {
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        /* Log terminal */
+        .log-terminal {
+            background: #020408;
+            border: 1px solid rgba(0, 210, 255, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            height: 300px;
+            overflow-y: auto;
+            line-height: 1.7;
+        }
+        .log-line { margin-bottom: 2px; }
+        .log-line .ts { color: rgba(0, 210, 255, 0.5); }
+        .log-line .msg { color: rgba(232,236,244,0.7); }
+        .log-line .msg.error { color: var(--red); }
+        .log-line .msg.success { color: var(--green); }
+        /* Top bar */
+        .main-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 12px 20px;
+            margin-bottom: 24px;
+        }
+        .server-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+        .status-dot-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2); } 50% { box-shadow: 0 0 0 6px rgba(0, 230, 118, 0.05); } }
+        .topbar-actions { display: flex; gap: 8px; }
+        .topbar-btn {
+            padding: 7px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .topbar-btn:hover { background: rgba(255,255,255,0.09); }
+        .topbar-btn.danger { border-color: rgba(255, 61, 113, 0.3); color: var(--red); }
+        .topbar-btn.danger:hover { background: rgba(255, 61, 113, 0.1); }
+        /* Tab button group */
+        .btn-group { display: flex; gap: 1px; }
+        .btn-group .btn-sm:first-child { border-radius: 6px 0 0 6px; }
+        .btn-group .btn-sm:last-child { border-radius: 0 6px 6px 0; }
+        .btn-group .btn-sm { border-radius: 0; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- Admin Login Gate -->
+<div id="adminLoginGate">
+    <div class="admin-login-box">
+        <div class="logo">🛡️</div>
+        <h2>Admin Dashboard</h2>
+        <p>Enter admin credentials to access control panel</p>
+        <div class="admin-field">
+            <i class="fa-solid fa-user-shield"></i>
+            <input type="text" id="adminUser" placeholder="Admin username" value="admin">
+        </div>
+        <div class="admin-field">
+            <i class="fa-solid fa-key"></i>
+            <input type="password" id="adminPass" placeholder="Admin password" onkeydown="if(event.key==='Enter') doAdminLogin()">
+        </div>
+        <button class="btn-admin-login" onclick="doAdminLogin()">
+            <i class="fa-solid fa-shield-halved"></i> Enter Admin Panel
+        </button>
+        <p class="admin-err" id="adminErr">❌ Wrong credentials. Default: admin / admin@shariah123</p>
+    </div>
+</div>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+    <div class="sidebar-brand">
+        <h1>SHARIAH <span>ADMIN</span></h1>
+        <p>Control Panel v2.0</p>
+    </div>
+    <div class="sidebar-nav">
+        <div class="nav-section-label">Overview</div>
+        <div class="nav-item active" onclick="showSection('dashboard')">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </div>
+
+        <div class="nav-section-label">Users</div>
+        <div class="nav-item" onclick="showSection('users')">
+            <i class="fa-solid fa-users"></i> Client Accounts
+            <span class="nav-badge" id="userCountBadge">0</span>
+        </div>
+        <div class="nav-item" onclick="showSection('pending')">
+            <i class="fa-solid fa-user-clock"></i> Pending Requests
+            <span class="nav-badge red" id="pendingCountBadge">0</span>
+        </div>
+        <div class="nav-item" onclick="showSection('pricing')">
+            <i class="fa-solid fa-tags"></i> Plans & Coupons
+        </div>
+
+        <div class="nav-section-label">Terminal Control</div>
+        <div class="nav-item" onclick="showSection('indicators')">
+            <i class="fa-solid fa-chart-line"></i> Indicators Control
+        </div>
+        <div class="nav-item" onclick="showSection('access')">
+            <i class="fa-solid fa-sliders"></i> Access Settings
+        </div>
+        <div class="nav-item" onclick="showSection('stocks')">
+            <i class="fa-solid fa-list-check"></i> Stock Management
+        </div>
+
+        <div class="nav-section-label">System</div>
+        <div class="nav-item" onclick="showSection('logs')">
+            <i class="fa-solid fa-terminal"></i> Live Logs
+        </div>
+        <div class="nav-item" onclick="showSection('config')">
+            <i class="fa-solid fa-gear"></i> Configuration
+        </div>
+    </div>
+    <div class="sidebar-footer" style="display:flex; align-items:center; justify-content:space-between; padding: 12px 16px;">
+        <div class="admin-user-tag" style="margin-bottom:0;">
+            <div class="admin-avatar">A</div>
+            <div class="admin-user-info">
+                <div class="name" id="sidebarAdminUser">Admin</div>
+                <div class="role">Super Administrator</div>
+            </div>
+        </div>
+        <button onclick="doAdminLogout()" class="btn-sm red" title="Logout from Admin Panel" style="padding: 5px 10px; cursor:pointer;">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Top bar -->
+    <div class="main-topbar">
+        <div class="server-status">
+            <div class="status-dot-pulse"></div>
+            <span>Server Running • http://127.0.0.1:8000</span>
+            <span style="color:var(--text-dim); margin-left: 8px;" id="stockCountDisplay">—</span>
+        </div>
+        <div class="topbar-actions">
+            <button class="topbar-btn" onclick="refreshDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+            <button class="topbar-btn danger" onclick="if(confirm('Restart sync?')) fetch('/api/admin/restart_sync',{method:'POST',headers:{...adminHeaders()}}).then(()=>alert('Sync restarted'))"><i class="fa-solid fa-rotate"></i> Restart Sync</button>
+            <button class="topbar-btn danger" onclick="doAdminLogout()" style="background:rgba(255,61,113,0.15); border-color:var(--red); color:var(--red);"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div class="admin-section active" id="section-dashboard">
+        <div class="page-header">
+            <div>
+                <h2>Dashboard</h2>
+                <p>Real-time overview of the Shariah Terminal system</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statTotalUsers">—</div>
+                    <div class="lbl">Registered Users</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-green"><i class="fa-solid fa-user-check"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statActiveUsers">—</div>
+                    <div class="lbl">Active Users</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-gold"><i class="fa-solid fa-user-clock"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statPendingUsers">—</div>
+                    <div class="lbl">Pending Approval</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-purple"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statHalalStocks">—</div>
+                    <div class="lbl">Halal Stocks</div>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('users'); setUserFilter('online', document.getElementById('pillUserOnline'));" style="cursor:pointer;" title="Click to view online users">
+                <div class="stat-icon icon-green"><i class="fa-solid fa-wifi"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statOnlineUsers">0</div>
+                    <div class="lbl">🟢 Online in Terminal</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-database"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="statTotalStocks">—</div>
+                    <div class="lbl">Total Stocks</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Active Users Card -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-circle" style="color: #00e676; font-size: 0.75rem;"></i> Active Terminal Users (Live Right Now)</h3>
+                    <p>Clients currently logged in and actively viewing the live market terminal</p>
+                </div>
+                <button class="btn-sm green" onclick="loadUsers()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+            <div id="liveOnlineUsersBox" style="padding: 16px 20px;">
+                <div style="color:var(--text-dim); font-size:0.85rem;"><i class="fa-solid fa-moon"></i> Checking active users...</div>
+            </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-bolt" style="color: var(--gold);"></i> Quick Actions</h3>
+                    <p>Common admin operations</p>
+                </div>
+            </div>
+            <div style="padding: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn-sm blue" onclick="showSection('users')"><i class="fa-solid fa-users"></i> Manage Users</button>
+                <button class="btn-sm green" onclick="showAddUser()"><i class="fa-solid fa-user-plus"></i> Add New User</button>
+                <button class="btn-sm blue" onclick="showSection('indicators')"><i class="fa-solid fa-chart-line"></i> Control Indicators</button>
+                <button class="btn-sm" onclick="showSection('logs')"><i class="fa-solid fa-terminal"></i> View Logs</button>
+                <button class="btn-sm" onclick="syncStocks()"><i class="fa-solid fa-rotate"></i> Sync Stocks Now</button>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div><h3>System Status</h3></div>
+            </div>
+            <div id="systemStatusRows">
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Market Data Feed</div>
+                        <div class="ctrl-desc">Yahoo Finance + NSE live price sync</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <span class="status-pill status-active" id="feedStatus"><span class="status-dot"></span> Live</span>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Angel One SmartAPI</div>
+                        <div class="ctrl-desc">WebSocket live tick feed</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <span class="status-pill status-pending" id="angelStatus"><span class="status-dot"></span> Not Connected</span>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Background Sync Thread</div>
+                        <div class="ctrl-desc">Parallel stock batch sync worker</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <span class="status-pill status-active"><span class="status-dot"></span> Running</span>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Shariah Compliance Engine</div>
+                        <div class="ctrl-desc">AAOIFI Standard 21 screener</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <span class="status-pill status-active"><span class="status-dot"></span> Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Section -->
+    <div class="admin-section" id="section-users">
+        <div class="page-header">
+            <div>
+                <h2>Client Accounts & Subscriptions</h2>
+                <p>Track Free Trials, Paid memberships, Live active users, and adjust client plan validity</p>
+            </div>
+            <button class="topbar-btn" onclick="showAddUser()"><i class="fa-solid fa-user-plus"></i> Add User</button>
+        </div>
+
+        <!-- User Category Filter Pills -->
+        <div class="user-filter-pills" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+            <button class="filter-pill active" id="pillUserAll" onclick="setUserFilter('all', this)">All Users <span id="countAllUsers" class="badge">0</span></button>
+            <button class="filter-pill" id="pillUserTrial" onclick="setUserFilter('trial', this)"><i class="fa-solid fa-seedling" style="color:var(--green);"></i> Free Trials <span id="countTrialUsers" class="badge">0</span></button>
+            <button class="filter-pill" id="pillUserPaid" onclick="setUserFilter('paid', this)"><i class="fa-solid fa-credit-card" style="color:var(--accent);"></i> Paid Members <span id="countPaidUsers" class="badge">0</span></button>
+            <button class="filter-pill" id="pillUserOnline" onclick="setUserFilter('online', this)"><i class="fa-solid fa-circle" style="color:#00e676; font-size:0.6rem;"></i> Online Now <span id="countOnlineUsers" class="badge">0</span></button>
+            <button class="filter-pill" id="pillUserPending" onclick="setUserFilter('pending', this)"><i class="fa-solid fa-clock" style="color:var(--gold);"></i> Pending Approval <span id="countPendingUsers" class="badge">0</span></button>
+            <button class="filter-pill" id="pillUserExpired" onclick="setUserFilter('expired', this)"><i class="fa-solid fa-ban" style="color:var(--red);"></i> Expired <span id="countExpiredUsers" class="badge">0</span></button>
+        </div>
+
+        <div class="admin-search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search users by name, email or phone..." oninput="filterUsers(this.value)">
+        </div>
+        <div class="admin-card">
+            <table class="admin-table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Contact</th>
+                        <th>Plan & Type</th>
+                        <th>Validity / Days Left</th>
+                        <th>Live Activity</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="7" style="text-align:center; color:var(--text-dim); padding: 30px;">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Section -->
+    <div class="admin-section" id="section-pending">
+        <div class="page-header">
+            <div>
+                <h2>Pending Requests</h2>
+                <p>New users waiting for approval</p>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div><h3><i class="fa-solid fa-user-clock" style="color:var(--gold);"></i> Pending Registration Requests</h3></div>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Requested</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="pendingTableBody">
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding: 30px;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-card" style="margin-top: 20px;">
+            <div class="admin-card-header">
+                <div><h3><i class="fa-solid fa-indian-rupee-sign" style="color:var(--green);"></i> Purchase Requests (Pricing Page)</h3>
+                <p>Users who submitted plan purchase requests from the pricing page</p></div>
+                <button class="btn-sm blue" onclick="loadPurchases()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Plan</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="purchasesTableBody">
+                    <tr><td colspan="7" style="text-align:center; color:var(--text-dim); padding: 30px;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Plans & Coupons Section -->
+    <div class="admin-section" id="section-pricing">
+        <div class="page-header">
+            <div>
+                <h2>Plans & Pricing Management</h2>
+                <p>Customize base subscription rates and manage discount coupons</p>
+            </div>
+            <button class="topbar-btn" onclick="saveAdminPricing()"><i class="fa-solid fa-floppy-disk"></i> Save Plan Prices</button>
+        </div>
+
+        <!-- Plan Prices Editor -->
+        <div class="admin-card" style="margin-bottom: 24px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-tags" style="color: var(--accent);"></i> Base Plan Prices</h3>
+                    <p>Prices displayed on the public /pricing page</p>
+                </div>
+            </div>
+            <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                <!-- Free Trial -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px;">
+                    <div style="font-weight: 700; color: var(--green); margin-bottom: 12px; font-size: 0.95rem;">🌱 Free Trial</div>
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Trial Duration (Days)</label>
+                    <input type="number" id="priceTrialDays" value="7" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                </div>
+
+                <!-- Basic Plan -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px;">
+                    <div style="font-weight: 700; color: var(--accent); margin-bottom: 12px; font-size: 0.95rem;">⚡ Basic Plan</div>
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Monthly Rate (₹)</label>
+                    <input type="number" id="priceBasicMonthly" value="499" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; margin-bottom: 8px;">
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Yearly Rate (₹)</label>
+                    <input type="number" id="priceBasicYearly" value="4188" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                </div>
+
+                <!-- Pro Plan -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px;">
+                    <div style="font-weight: 700; color: var(--gold); margin-bottom: 12px; font-size: 0.95rem;">🏆 Pro Plan</div>
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Monthly Rate (₹)</label>
+                    <input type="number" id="priceProMonthly" value="999" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; margin-bottom: 8px;">
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Yearly Rate (₹)</label>
+                    <input type="number" id="priceProYearly" value="8388" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                </div>
+
+                <!-- Elite VIP Plan -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px;">
+                    <div style="font-weight: 700; color: var(--purple); margin-bottom: 12px; font-size: 0.95rem;">💎 Elite VIP Plan</div>
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Monthly Rate (₹)</label>
+                    <input type="number" id="priceEliteMonthly" value="1999" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; margin-bottom: 8px;">
+                    <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Yearly Rate (₹)</label>
+                    <input type="number" id="priceEliteYearly" value="16788" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Coupons Manager -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-ticket" style="color: var(--accent);"></i> Discount Coupons</h3>
+                    <p>Create promotional codes for clients on the pricing page</p>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; border-bottom: 1px solid var(--card-border); background: rgba(0,210,255,0.03);">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Coupon Code</label>
+                        <input type="text" id="newCouponCode" placeholder="e.g. HALAL30" style="width: 100%; text-transform: uppercase; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                    </div>
+                    <div style="width: 130px;">
+                        <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Discount Type</label>
+                        <select id="newCouponType" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                            <option value="percent">Percentage (%)</option>
+                            <option value="flat">Flat Cash (₹)</option>
+                        </select>
+                    </div>
+                    <div style="width: 120px;">
+                        <label style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Discount Value</label>
+                        <input type="number" id="newCouponVal" placeholder="20" style="width: 100%; padding: 8px 12px; background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px;">
+                    </div>
+                    <button class="btn-sm green" onclick="createCoupon()" style="height: 36px; padding: 0 16px;"><i class="fa-solid fa-plus"></i> Add Coupon</button>
+                </div>
+            </div>
+
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Discount</th>
+                        <th>Applies To</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="couponsTableBody">
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding: 30px;">Loading coupons...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- Indicators Control -->
+    <div class="admin-section" id="section-indicators">
+        <div class="page-header">
+            <div>
+                <h2>Indicators Control</h2>
+                <p>Control which technical indicators are shown to clients</p>
+            </div>
+            <button class="topbar-btn" onclick="saveIndicatorSettings()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h3>Technical Indicators Visibility</h3>
+                    <p>Toggle which indicators are available in the terminal for clients</p>
+                </div>
+            </div>
+            <div id="indicatorControls">
+                <!-- Dynamically rendered -->
+            </div>
+        </div>
+
+        <div class="admin-card" style="margin-top: 20px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3>Default Filters on Login</h3>
+                    <p>What filters are pre-selected when a user opens the terminal</p>
+                </div>
+            </div>
+            <div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Default Shariah Filter</div>
+                        <div class="ctrl-desc">What Shariah tab is selected by default</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <select class="admin-select" id="defaultShariah">
+                            <option value="HALAL">100% Halal Only</option>
+                            <option value="ALL">All Equities</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Default Time Frame</div>
+                        <div class="ctrl-desc">Default chart time frame shown to users</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <select class="admin-select" id="defaultTimeframe">
+                            <option value="1d">1 Day (Daily)</option>
+                            <option value="1w">1 Week (Weekly)</option>
+                            <option value="1m">1 Month (Monthly)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Show Portfolio Feature</div>
+                        <div class="ctrl-desc">Allow clients to track their portfolio</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showPortfolio" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Show Angel One Login Button</div>
+                        <div class="ctrl-desc">Let clients connect their own Angel One account</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showAngelLogin" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Settings -->
+    <div class="admin-section" id="section-access">
+        <div class="page-header">
+            <div>
+                <h2>Access Settings</h2>
+                <p>Control client limits and access restrictions</p>
+            </div>
+            <button class="topbar-btn" onclick="saveAccessSettings()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+        <div class="admin-card">
+            <div class="ctrl-row">
+                <div class="ctrl-info">
+                    <div class="ctrl-label">Max Concurrent Users</div>
+                    <div class="ctrl-desc">Maximum number of users that can be logged in at the same time</div>
+                </div>
+                <div class="ctrl-action">
+                    <input type="number" class="num-input" id="maxUsers" value="50" min="1" max="500">
+                </div>
+            </div>
+            <div class="ctrl-row">
+                <div class="ctrl-info">
+                    <div class="ctrl-label">Session Timeout (minutes)</div>
+                    <div class="ctrl-desc">Auto-logout users after inactivity</div>
+                </div>
+                <div class="ctrl-action">
+                    <input type="number" class="num-input" id="sessionTimeout" value="480" min="30">
+                </div>
+            </div>
+            <div class="ctrl-row">
+                <div class="ctrl-info">
+                    <div class="ctrl-label">Require Login to Access Terminal</div>
+                    <div class="ctrl-desc">If disabled, anyone can access the terminal without login</div>
+                </div>
+                <div class="ctrl-action">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="requireLogin" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="ctrl-row">
+                <div class="ctrl-info">
+                    <div class="ctrl-label">Allow Self-Registration</div>
+                    <div class="ctrl-desc">Let users register themselves (admin approval required)</div>
+                </div>
+                <div class="ctrl-action">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="allowRegister" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="ctrl-row">
+                <div class="ctrl-info">
+                    <div class="ctrl-label">Stock Data Limit Per User</div>
+                    <div class="ctrl-desc">Max stocks visible per session (0 = unlimited)</div>
+                </div>
+                <div class="ctrl-action">
+                    <input type="number" class="num-input" id="stockLimit" value="0" min="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="margin-top: 20px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3>Subscription Plans</h3>
+                    <p>Define different access tiers for clients</p>
+                </div>
+                <button class="btn-sm blue" onclick="showAddPlan()"><i class="fa-solid fa-plus"></i> Add Plan</button>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Plan Name</th><th>Stocks Limit</th><th>Indicators</th><th>Portfolio</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="plansTableBody">
+                    <tr>
+                        <td><strong>Free Trial</strong></td>
+                        <td>100</td>
+                        <td><span class="indicator-pill enabled">Basic</span></td>
+                        <td><span class="status-pill status-blocked">No</span></td>
+                        <td><button class="btn-sm" onclick="editPlan('trial')">Edit</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Basic</strong></td>
+                        <td>500</td>
+                        <td><span class="indicator-pill enabled">EMA, RSI, MACD</span></td>
+                        <td><span class="status-pill status-active">Yes</span></td>
+                        <td><button class="btn-sm" onclick="editPlan('basic')">Edit</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pro</strong></td>
+                        <td>Unlimited</td>
+                        <td><span class="indicator-pill enabled">All Indicators</span></td>
+                        <td><span class="status-pill status-active">Yes</span></td>
+                        <td><button class="btn-sm" onclick="editPlan('pro')">Edit</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Stock Management -->
+    <div class="admin-section" id="section-stocks">
+        <div class="page-header">
+            <div>
+                <h2>Stock Management</h2>
+                <p>Control which stocks are in the Shariah universe</p>
+            </div>
+            <button class="topbar-btn" onclick="syncStocks()"><i class="fa-solid fa-rotate"></i> Sync Stocks</button>
+        </div>
+        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="stat-card">
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-database"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="stockTotal2">—</div>
+                    <div class="lbl">Total Stocks</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-green"><i class="fa-solid fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="stockHalal2">—</div>
+                    <div class="lbl">Halal Verified</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-red"><i class="fa-solid fa-ban"></i></div>
+                <div class="stat-info">
+                    <div class="val" id="stockNotHalal2">—</div>
+                    <div class="lbl">Non-Compliant</div>
+                </div>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div><h3>Sector Control</h3><p>Enable/disable entire sectors from appearing in the terminal</p></div>
+            </div>
+            <div id="sectorControls">Loading sectors...</div>
+        </div>
+    </div>
+
+    <!-- Logs Section -->
+    <div class="admin-section" id="section-logs">
+        <div class="page-header">
+            <div>
+                <h2>Live Logs</h2>
+                <p>Server and sync activity log stream</p>
+            </div>
+            <button class="topbar-btn" onclick="clearLogs()"><i class="fa-solid fa-trash"></i> Clear</button>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div><h3>Server Activity Log</h3></div>
+            </div>
+            <div style="padding: 16px;">
+                <div class="log-terminal" id="logTerminal">
+                    <div class="log-line"><span class="ts">[14:07:01] </span><span class="msg success">✅ Background Sync Active for 2457 Shariah Stocks</span></div>
+                    <div class="log-line"><span class="ts">[14:07:02] </span><span class="msg">Server started on http://127.0.0.1:8000</span></div>
+                    <div class="log-line"><span class="ts">[14:07:05] </span><span class="msg">WebSocket connected: /ws/live</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Section -->
+    <div class="admin-section" id="section-config">
+        <div class="page-header">
+            <div>
+                <h2>Configuration</h2>
+                <p>System configuration and admin password</p>
+            </div>
+            <button class="topbar-btn" onclick="saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Save Config</button>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div><h3>Admin Credentials</h3></div>
+            </div>
+            <div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Admin Username</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 200px;">
+                        <input type="text" class="num-input" style="width: 180px;" id="cfgAdminUser" value="admin">
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Admin Password</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 200px;">
+                        <input type="password" class="num-input" style="width: 180px;" id="cfgAdminPass" placeholder="New password...">
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Terminal App Title</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 200px;">
+                        <input type="text" class="num-input" style="width: 180px;" id="cfgAppTitle" value="Shariah Terminal">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="margin-top: 20px;">
+            <div class="admin-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-plug-circle-bolt" style="color:var(--accent);"></i> Angel One SmartAPI Configuration</h3>
+                    <p>Connect your Angel One account via 32-character TOTP Secret (Auto) or 6-digit live OTP (Manual)</p>
+                </div>
+            </div>
+            <div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">SmartAPI Key</div>
+                        <div class="ctrl-desc">Angel One SmartAPI Key (from smartapi.angelone.in)</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 280px; gap: 6px;">
+                        <input type="password" class="num-input" style="width: 220px;" id="cfgApiKey" placeholder="Angel One API Key">
+                        <button class="btn-sm" onclick="toggleField('cfgApiKey',this)"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">Client ID (Username)</div>
+                        <div class="ctrl-desc">Angel One Trading Client ID (e.g. M163733)</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 280px;">
+                        <input type="text" class="num-input" style="width: 240px;" id="cfgClientId" placeholder="e.g. M163733">
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">4-Digit MPIN / Password</div>
+                        <div class="ctrl-desc">Your login PIN</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 280px; gap: 6px;">
+                        <input type="password" class="num-input" style="width: 220px;" id="cfgPin" placeholder="4-digit PIN">
+                        <button class="btn-sm" onclick="toggleField('cfgPin',this)"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <!-- Option A: 32-Character Secret Key -->
+                <div class="ctrl-row" style="background: rgba(0,210,255,0.03); border-top: 1px solid rgba(0,210,255,0.12); border-bottom: 1px solid rgba(0,210,255,0.12);">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label" style="color:var(--accent); font-weight:700;"><i class="fa-solid fa-key"></i> Option 1: 32-Character TOTP Secret Key (Auto-Login)</div>
+                        <div class="ctrl-desc">Base32 Secret key from Angel One TOTP QR setup. Server auto-generates TOTP every time — no manual OTP needed!</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 280px; gap:6px;">
+                        <input type="password" class="num-input" style="width: 220px;" id="cfgTotp" placeholder="32-char BASE32 key (e.g. JBSWY3...)">
+                        <button class="btn-sm" onclick="toggleField('cfgTotp',this)"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <!-- Option B: 6-Digit Live OTP -->
+                <div class="ctrl-row" style="background: rgba(0,230,118,0.03); border-bottom: 1px solid rgba(0,230,118,0.12);">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label" style="color:var(--green); font-weight:700;"><i class="fa-solid fa-mobile-screen"></i> Option 2: 6-Digit Live OTP (Quick Manual Connect)</div>
+                        <div class="ctrl-desc">Current 6-digit code from Google Authenticator / Angel One app.</div>
+                    </div>
+                    <div class="ctrl-action" style="min-width: 280px;">
+                        <input type="text" class="num-input" style="width: 140px; font-weight:700; letter-spacing:2px; font-size:1rem;" id="cfgTotpCode" placeholder="6-digit OTP" maxlength="6">
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div style="padding: 16px 20px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                    <button class="btn-sm blue" onclick="connectAngelWithSecret()" style="padding: 8px 16px; font-size:0.8rem;">
+                        <i class="fa-solid fa-bolt"></i> Connect with 32-Char Secret Key
+                    </button>
+                    <button class="btn-sm green" onclick="connectAngelWithOtp()" style="padding: 8px 16px; font-size:0.8rem;">
+                        <i class="fa-solid fa-plug"></i> Connect with 6-Digit Live OTP
+                    </button>
+                    <button class="btn-sm" onclick="saveCredsOnly()" style="padding: 8px 16px; font-size:0.8rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Details Only
+                    </button>
+                </div>
+                <div id="angelConnectResult" style="margin: 0 20px 16px; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="admin-modal-overlay" id="addUserModal">
+    <div class="admin-modal">
+        <h3><i class="fa-solid fa-user-plus"></i> Add New User</h3>
+        <div class="modal-field">
+            <label>Full Name</label>
+            <input type="text" id="newUserName" placeholder="Mohammed Ali Khan">
+        </div>
+        <div class="modal-field">
+            <label>Email Address</label>
+            <input type="email" id="newUserEmail" placeholder="user@email.com">
+        </div>
+        <div class="modal-field">
+            <label>Phone Number</label>
+            <input type="tel" id="newUserPhone" placeholder="9876543210">
+        </div>
+        <div class="modal-field">
+            <label>Password</label>
+            <input type="text" id="newUserPassword" placeholder="Temporary password">
+        </div>
+        <div class="modal-field">
+            <label>Plan</label>
+            <select id="newUserPlan">
+                <option value="trial">Free Trial</option>
+                <option value="basic">Basic</option>
+                <option value="pro" selected>Pro</option>
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>Status</label>
+            <select id="newUserStatus">
+                <option value="active" selected>Active</option>
+                <option value="pending">Pending</option>
+                <option value="blocked">Blocked</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal cancel" onclick="closeModal('addUserModal')">Cancel</button>
+            <button class="btn-modal primary" onclick="addUser()"><i class="fa-solid fa-check"></i> Create User</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Plan & Validity Modal -->
+<div class="admin-modal-overlay" id="planModal">
+    <div class="admin-modal" style="max-width: 520px;">
+        <h3><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Edit User Plan & Validity</h3>
+        <div id="planModalUserName" style="font-weight:700; margin-bottom:14px; color:#fff; font-size:0.95rem;"></div>
+
+        <div class="modal-field">
+            <label>ASSIGN PLAN</label>
+            <select id="editUserPlanSelect">
+                <option value="trial">🌱 Free Trial (7 Days)</option>
+                <option value="basic">⚡ Basic Plan</option>
+                <option value="pro">🏆 Pro Plan</option>
+                <option value="elite">💎 Elite VIP Plan</option>
+            </select>
+        </div>
+
+        <div class="modal-field">
+            <label>PROFILE TYPE (FREE vs PAID)</label>
+            <div style="display:flex; gap:16px; margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.82rem;"><input type="radio" name="editPlanType" value="free" id="editPlanTypeFree"> 🌱 Free Account</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.82rem;"><input type="radio" name="editPlanType" value="paid" id="editPlanTypePaid" checked> 💳 Paid Customer</label>
+            </div>
+        </div>
+
+        <div class="modal-field">
+            <label>QUICK EXTEND VALIDITY</label>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                <button type="button" class="btn-sm" onclick="setQuickValidity(7)">+7 Days</button>
+                <button type="button" class="btn-sm" onclick="setQuickValidity(14)">+14 Days</button>
+                <button type="button" class="btn-sm" onclick="setQuickValidity(30)">+30 Days</button>
+                <button type="button" class="btn-sm" onclick="setQuickValidity(90)">+90 Days</button>
+                <button type="button" class="btn-sm" onclick="setQuickValidity(365)">+1 Year</button>
+                <button type="button" class="btn-sm purple" onclick="setQuickValidity('lifetime')">✨ Lifetime VIP</button>
+            </div>
+            <label style="font-size:0.72rem; color:var(--text-dim);">Or pick exact expiration date:</label>
+            <input type="date" id="editUserCustomDate" style="width:100%; padding:8px 12px; background:var(--card-bg); color:var(--text); border:1px solid var(--card-border); border-radius:6px; margin-top:4px;">
+        </div>
+
+        <div class="modal-field">
+            <label>ACCOUNT STATUS</label>
+            <select id="editUserStatusSelect">
+                <option value="active">Active (Full Access)</option>
+                <option value="expired">Expired (Terminal Blocked)</option>
+                <option value="pending">Pending Approval</option>
+                <option value="blocked">Blocked</option>
+            </select>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-modal cancel" onclick="closePlanModal()">Cancel</button>
+            <button class="btn-modal primary" onclick="saveUserPlanModal()"><i class="fa-solid fa-check"></i> Save Plan & Validity</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===================== AUTH =====================
+    function adminHeaders() {
+        const token = localStorage.getItem('admin_token') || '';
+        const user = localStorage.getItem('admin_username') || 'admin';
+        const pass = localStorage.getItem('admin_password') || 'admin@shariah123';
+        return {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': token,
+            'X-Admin-User': user,
+            'X-Admin-Pass': pass
+        };
+    }
+
+    async function doAdminLogin() {
+        const u = document.getElementById('adminUser').value.trim();
+        const p = document.getElementById('adminPass').value;
+        const errEl = document.getElementById('adminErr');
+        if (!u || !p) {
+            errEl.style.display = 'block';
+            errEl.textContent = '❌ Please enter username and password.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('admin_authed', '1');
+                localStorage.setItem('admin_token', data.token);
+                localStorage.setItem('admin_username', u);
+                localStorage.setItem('admin_password', p);
+                document.getElementById('adminLoginGate').style.display = 'none';
+                const nameEl = document.getElementById('sidebarAdminUser');
+                if (nameEl) nameEl.textContent = u;
+                refreshDashboard();
+            } else {
+                errEl.style.display = 'block';
+                errEl.textContent = '❌ ' + (data.error || 'Wrong credentials');
+            }
+        } catch(e) {
+            errEl.style.display = 'block';
+            errEl.textContent = '❌ Error communicating with server.';
+        }
+    }
+
+    function doAdminLogout() {
+        fetch('/api/admin/logout', {
+            method: 'POST',
+            headers: adminHeaders()
+        }).catch(() => {});
+        localStorage.removeItem('admin_authed');
+        localStorage.removeItem('admin_token');
+        document.getElementById('adminPass').value = '';
+        document.getElementById('adminLoginGate').style.display = 'flex';
+    }
+
+    // Check if authenticated
+    if (!localStorage.getItem('admin_authed') || !localStorage.getItem('admin_token')) {
+        document.getElementById('adminLoginGate').style.display = 'flex';
+    } else {
+        document.getElementById('adminLoginGate').style.display = 'none';
+        const nameEl = document.getElementById('sidebarAdminUser');
+        if (nameEl) nameEl.textContent = localStorage.getItem('admin_username') || 'Admin';
+    }
+    document.getElementById('adminPass').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+
+    // ===================== NAVIGATION =====================
+    function showSection(id) {
+        document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        event && event.currentTarget && event.currentTarget.classList.add('active');
+
+        if (id === 'users') loadUsers();
+        if (id === 'pending') loadPending();
+        if (id === 'pricing') loadAdminPricing();
+        if (id === 'indicators') loadIndicators();
+        if (id === 'stocks') loadStockStats();
+        if (id === 'logs') startLogPolling();
+        if (id === 'config') loadConfig();
+    }
+
+    // Nav items click binding
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // ===================== DASHBOARD =====================
+    async function refreshDashboard() {
+        try {
+            const [statusRes, usersRes] = await Promise.all([
+                fetch('/api/status'),
+                fetch('/api/admin/users', { headers: adminHeaders() })
+            ]);
+
+            const status = await statusRes.json();
+            document.getElementById('stockCountDisplay').textContent = `${status.total_stocks} stocks synced`;
+            document.getElementById('statTotalStocks').textContent = status.total_stocks || '—';
+
+            if (status.is_connected) {
+                document.getElementById('angelStatus').innerHTML = '<span class="status-dot"></span> Connected';
+                document.getElementById('angelStatus').className = 'status-pill status-active';
+            }
+
+            if (usersRes.ok) {
+                const data = await usersRes.json();
+                const users = data.users || [];
+                const active = users.filter(u => u.status === 'active').length;
+                const pending = users.filter(u => u.status === 'pending').length;
+                document.getElementById('statTotalUsers').textContent = users.length;
+                document.getElementById('statActiveUsers').textContent = active;
+                document.getElementById('statPendingUsers').textContent = pending;
+                document.getElementById('userCountBadge').textContent = users.length;
+                document.getElementById('pendingCountBadge').textContent = pending;
+
+                const halal = status.total_stocks || 0;
+                document.getElementById('statHalalStocks').textContent = halal;
+                updateLiveOnlineCard(users);
+            }
+        } catch (e) {
+            console.error('Dashboard refresh error:', e);
+            document.getElementById('statTotalUsers').textContent = 'N/A';
+        }
+    }
+
+    function updateLiveOnlineCard(users) {
+        const online = (users || []).filter(u => u.is_online);
+        const countEl = document.getElementById('statOnlineUsers');
+        if (countEl) countEl.textContent = online.length;
+
+        const box = document.getElementById('liveOnlineUsersBox');
+        if (!box) return;
+
+        if (!online.length) {
+            box.innerHTML = '<div style="color:var(--text-dim); font-size:0.85rem; padding:12px 0;"><i class="fa-solid fa-moon"></i> No clients currently active on the terminal right now. (Updates live as soon as a user accesses the terminal).</div>';
+            return;
+        }
+
+        box.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+                ${online.map(u => `
+                    <div style="background: rgba(0,230,118,0.06); border: 1px solid rgba(0,230,118,0.25); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="status-dot" style="background:#00e676; box-shadow:0 0 8px #00e676;"></span>
+                                <strong style="font-size:0.92rem; color:#fff;">${u.name}</strong>
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:2px;">${u.email}</div>
+                            <div style="font-size:0.72rem; color:var(--green); font-weight:700; margin-top:4px;">
+                                ${(u.plan || 'pro').toUpperCase()} (${(u.plan_type || 'paid').toUpperCase()}) • ${u.is_lifetime ? '✨ Lifetime VIP' : (u.days_left + 'd left')}
+                            </div>
+                        </div>
+                        <button class="btn-sm green" onclick="openPlanModal('${u.id}')" title="Edit Plan & Validity">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // ===================== USERS & SUBSCRIPTIONS =====================
+    let allUsers = [];
+    let activeUserFilter = 'all';
+    let editingUserId = null;
+
+    async function loadUsers() {
+        try {
+            const res = await fetch('/api/admin/users', { headers: adminHeaders() });
+            const data = await res.json();
+            allUsers = data.users || [];
+            updateFilterCounts(allUsers);
+            renderUsersTable(allUsers);
+            updateLiveOnlineCard(allUsers);
+        } catch (e) {
+            document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px;">Error loading users. Is the server running?</td></tr>';
+        }
+    }
+
+    function updateFilterCounts(users) {
+        const total = users.length;
+        const trials = users.filter(u => u.plan === 'trial' || u.plan_type === 'free').length;
+        const paid = users.filter(u => u.plan_type === 'paid' && u.plan !== 'trial').length;
+        const online = users.filter(u => u.is_online).length;
+        const pending = users.filter(u => u.status === 'pending').length;
+        const expired = users.filter(u => u.is_expired || u.status === 'expired' || (u.days_left !== undefined && u.days_left <= 0 && !u.is_lifetime)).length;
+
+        const cAll = document.getElementById('countAllUsers'); if (cAll) cAll.textContent = total;
+        const cTr = document.getElementById('countTrialUsers'); if (cTr) cTr.textContent = trials;
+        const cPd = document.getElementById('countPaidUsers'); if (cPd) cPd.textContent = paid;
+        const cOn = document.getElementById('countOnlineUsers'); if (cOn) cOn.textContent = online;
+        const cPen = document.getElementById('countPendingUsers'); if (cPen) cPen.textContent = pending;
+        const cExp = document.getElementById('countExpiredUsers'); if (cExp) cExp.textContent = expired;
+    }
+
+    function setUserFilter(filterType, btnEl) {
+        activeUserFilter = filterType;
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+        renderUsersTable(allUsers);
+    }
+
+    function renderUsersTable(users) {
+        const tbody = document.getElementById('usersTableBody');
+        
+        let filtered = users;
+        if (activeUserFilter === 'trial') {
+            filtered = users.filter(u => u.plan === 'trial' || u.plan_type === 'free');
+        } else if (activeUserFilter === 'paid') {
+            filtered = users.filter(u => u.plan_type === 'paid' && u.plan !== 'trial');
+        } else if (activeUserFilter === 'online') {
+            filtered = users.filter(u => u.is_online);
+        } else if (activeUserFilter === 'pending') {
+            filtered = users.filter(u => u.status === 'pending');
+        } else if (activeUserFilter === 'expired') {
+            filtered = users.filter(u => u.is_expired || u.status === 'expired' || (u.days_left !== undefined && u.days_left <= 0 && !u.is_lifetime));
+        }
+
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px;">No users found in this category.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(u => {
+            const isTrial = (u.plan === 'trial' || u.plan_type === 'free');
+            const isExp = u.is_expired || u.status === 'expired' || (u.days_left !== undefined && u.days_left <= 0 && !u.is_lifetime);
+            
+            // Plan Badge
+            let planBadgeHtml = '';
+            if (u.is_lifetime) {
+                planBadgeHtml = '<span class="indicator-pill enabled" style="background:rgba(168,85,247,0.18); color:#c084fc; border:1px solid rgba(168,85,247,0.4);">✨ LIFETIME VIP</span>';
+            } else if (isTrial) {
+                planBadgeHtml = '<span class="indicator-pill" style="background:rgba(255,209,102,0.15); color:#ffd166; border:1px solid rgba(255,209,102,0.3);">🌱 FREE TRIAL</span>';
+            } else {
+                planBadgeHtml = `<span class="indicator-pill enabled"><i class="fa-solid fa-credit-card"></i> ${(u.plan || 'pro').toUpperCase()} (PAID)</span>`;
+            }
+
+            // Validity Countdown
+            let validityHtml = '';
+            if (u.is_lifetime) {
+                validityHtml = '<div style="color:#c084fc; font-weight:700;"><i class="fa-solid fa-infinity"></i> Unlimited</div>';
+            } else if (isExp) {
+                validityHtml = `
+                    <div style="color:var(--red); font-weight:700;"><i class="fa-solid fa-ban"></i> Expired</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim);">${u.expires_at ? u.expires_at.slice(0,10) : 'Cutoff passed'}</div>
+                `;
+            } else {
+                const days = u.days_left !== undefined ? u.days_left : 0;
+                const col = days <= 2 ? 'var(--red)' : '#ffd166';
+                validityHtml = `
+                    <div style="color:${col}; font-weight:700;"><i class="fa-solid fa-hourglass-half"></i> ${days} Days Left</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim);">${u.expires_at ? u.expires_at.slice(0,10) : ''}</div>
+                `;
+            }
+
+            // Activity
+            let activityHtml = '';
+            if (u.is_online) {
+                activityHtml = '<span style="color:#00e676; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-circle" style="font-size:0.55rem;"></i> Online Now</span>';
+            } else {
+                activityHtml = `<span style="color:var(--text-dim); font-size:0.75rem;">${u.last_active ? 'Seen ' + u.last_active.slice(11,16) : (u.created_at ? u.created_at.slice(0,10) : '—')}</span>`;
+            }
+
+            return `
+            <tr>
+                <td>
+                    <div style="font-weight:600;">${u.name}</div>
+                    <div style="font-size:0.7rem;color:var(--text-dim);">ID: ${u.id.slice(0,8)}...</div>
+                </td>
+                <td>
+                    <div>${u.email}</div>
+                    <div style="font-size:0.72rem;color:var(--text-dim);">${u.phone || '—'}</div>
+                </td>
+                <td>${planBadgeHtml}</td>
+                <td>${validityHtml}</td>
+                <td>${activityHtml}</td>
+                <td>
+                    <span class="status-pill status-${isExp ? 'expired' : (u.status || 'active')}">
+                        <span class="status-dot"></span>
+                        ${isExp ? 'Expired' : ((u.status || 'active').charAt(0).toUpperCase() + (u.status || 'active').slice(1))}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn-sm green" onclick="openPlanModal('${u.id}')" title="Edit Plan & Validity">
+                            <i class="fa-solid fa-calendar-check"></i> Plan & Validity
+                        </button>
+                        <button class="btn-sm blue" onclick="toggleUserStatus('${u.id}', '${u.status}')">
+                            ${u.status === 'active' ? '<i class="fa-solid fa-lock"></i> Block' : '<i class="fa-solid fa-unlock"></i> Activate'}
+                        </button>
+                        <button class="btn-sm" onclick="resetPassword('${u.id}')"><i class="fa-solid fa-key"></i></button>
+                        <button class="btn-sm red" onclick="deleteUser('${u.id}', '${u.name}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    function filterUsers(q) {
+        const query = q.toLowerCase();
+        const filtered = allUsers.filter(u =>
+            u.name.toLowerCase().includes(query) ||
+            u.email.toLowerCase().includes(query) ||
+            (u.phone && u.phone.includes(query))
+        );
+        renderUsersTable(filtered);
+    }
+
+    // Modal for editing plan & validity
+    function openPlanModal(userId) {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return;
+        editingUserId = userId;
+        document.getElementById('planModalUserName').innerHTML = `<span style="color:var(--accent); font-size:1.05rem;">${user.name}</span> <span style="color:var(--text-dim); font-size:0.8rem;">(${user.email})</span>`;
+        document.getElementById('editUserPlanSelect').value = user.plan || 'trial';
+        
+        const isPaid = (user.plan_type === 'paid') || (user.plan !== 'trial' && user.plan_type !== 'free');
+        document.getElementById('editPlanTypePaid').checked = isPaid;
+        document.getElementById('editPlanTypeFree').checked = !isPaid;
+        document.getElementById('editUserStatusSelect').value = user.status || 'active';
+        
+        if (user.expires_at) {
+            document.getElementById('editUserCustomDate').value = user.expires_at.slice(0, 10);
+        } else {
+            document.getElementById('editUserCustomDate').value = '';
+        }
+        document.getElementById('editUserPlanSelect').dataset.quickDays = user.is_lifetime ? 'lifetime' : '';
+        document.getElementById('planModal').classList.add('open');
+    }
+
+    function closePlanModal() {
+        document.getElementById('planModal').classList.remove('open');
+        editingUserId = null;
+    }
+
+    function setQuickValidity(val) {
+        if (val === 'lifetime') {
+            document.getElementById('editUserCustomDate').value = '';
+            document.getElementById('editUserPlanSelect').dataset.quickDays = 'lifetime';
+            alert('✨ Set to Unlimited Lifetime VIP access!');
+        } else {
+            const d = new Date();
+            d.setDate(d.getDate() + parseInt(val));
+            const iso = d.toISOString().slice(0, 10);
+            document.getElementById('editUserCustomDate').value = iso;
+            document.getElementById('editUserPlanSelect').dataset.quickDays = val;
+        }
+    }
+
+    async function saveUserPlanModal() {
+        if (!editingUserId) return;
+        const plan = document.getElementById('editUserPlanSelect').value;
+        const planType = document.getElementById('editPlanTypePaid').checked ? 'paid' : 'free';
+        const status = document.getElementById('editUserStatusSelect').value;
+        const customDate = document.getElementById('editUserCustomDate').value;
+        const isLifetime = document.getElementById('editUserPlanSelect').dataset.quickDays === 'lifetime';
+
+        const payload = {
+            plan: plan,
+            plan_type: planType,
+            status: status,
+            is_lifetime: isLifetime,
+            custom_expires_at: isLifetime ? null : (customDate || null),
+            days_to_add: null
+        };
+
+        try {
+            const res = await fetch(`/api/admin/users/${editingUserId}/plan`, {
+                method: 'PUT',
+                headers: adminHeaders(),
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ User plan and validity duration updated!');
+                closePlanModal();
+                loadUsers();
+                refreshDashboard();
+            } else {
+                alert(data.error || 'Failed to update user plan.');
+            }
+        } catch(e) {
+            alert('Error updating user plan.');
+        }
+    }
+
+    // ===================== DYNAMIC PRICING & COUPONS =====================
+    async function loadAdminPricing() {
+        try {
+            const res = await fetch('/api/pricing');
+            const data = await res.json();
+            const plans = data.plans || {};
+            if (plans.trial) document.getElementById('priceTrialDays').value = plans.trial.duration_days || 7;
+            if (plans.basic) {
+                document.getElementById('priceBasicMonthly').value = plans.basic.monthly || 499;
+                document.getElementById('priceBasicYearly').value = plans.basic.yearly || 4188;
+            }
+            if (plans.pro) {
+                document.getElementById('priceProMonthly').value = plans.pro.monthly || 999;
+                document.getElementById('priceProYearly').value = plans.pro.yearly || 8388;
+            }
+            if (plans.elite) {
+                document.getElementById('priceEliteMonthly').value = plans.elite.monthly || 1999;
+                document.getElementById('priceEliteYearly').value = plans.elite.yearly || 16788;
+            }
+            renderCouponsTable(data.coupons || []);
+        } catch(e) {
+            console.error('Error loading pricing:', e);
+        }
+    }
+
+    async function saveAdminPricing() {
+        const plans = {
+            trial: {
+                name: "Free Trial",
+                price: 0,
+                duration_days: parseInt(document.getElementById('priceTrialDays').value) || 7,
+                description: "Explore the platform — see how Halal investing works"
+            },
+            basic: {
+                name: "Basic",
+                monthly: parseFloat(document.getElementById('priceBasicMonthly').value) || 499,
+                yearly: parseFloat(document.getElementById('priceBasicYearly').value) || 4188,
+                description: "All Halal stocks with live technical signals"
+            },
+            pro: {
+                name: "Pro",
+                monthly: parseFloat(document.getElementById('priceProMonthly').value) || 999,
+                yearly: parseFloat(document.getElementById('priceProYearly').value) || 8388,
+                description: "Full access to every indicator and feature"
+            },
+            elite: {
+                name: "Elite VIP",
+                monthly: parseFloat(document.getElementById('priceEliteMonthly').value) || 1999,
+                yearly: parseFloat(document.getElementById('priceEliteYearly').value) || 16788,
+                description: "Live VIP signals, high-conviction alerts & 1-on-1 Shariah audit"
+            }
+        };
+
+        try {
+            const res = await fetch('/api/admin/pricing', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({ plans })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Plan base prices updated successfully! Reflected live on /pricing.');
+            } else {
+                alert('Failed to update pricing.');
+            }
+        } catch(e) {
+            alert('Error updating prices.');
+        }
+    }
+
+    function renderCouponsTable(coupons) {
+        const tbody = document.getElementById('couponsTableBody');
+        if (!coupons.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px;">No active coupons. Create a new coupon code above!</td></tr>';
+            return;
+        }
+        tbody.innerHTML = coupons.map(c => `
+            <tr>
+                <td><strong style="font-family:'JetBrains Mono'; color:var(--accent); font-size:0.95rem;">${c.code}</strong></td>
+                <td><span class="indicator-pill enabled">${c.discount_type === 'percent' ? c.discount_val + '%' : '₹' + c.discount_val} OFF</span></td>
+                <td>${(c.valid_plan || 'all').toUpperCase()}</td>
+                <td><span class="status-pill status-${c.active ? 'active' : 'pending'}"><span class="status-dot"></span> ${c.active ? 'Active' : 'Disabled'}</span></td>
+                <td>
+                    <button class="btn-sm red" onclick="deleteCoupon('${c.code}')"><i class="fa-solid fa-trash"></i> Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function createCoupon() {
+        const code = document.getElementById('newCouponCode').value.trim().toUpperCase();
+        const type = document.getElementById('newCouponType').value;
+        const val = parseFloat(document.getElementById('newCouponVal').value);
+        if (!code || isNaN(val) || val <= 0) {
+            alert('Please enter coupon code and discount amount.');
+            return;
+        }
+        try {
+            const res = await fetch('/api/admin/coupons', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({
+                    code: code,
+                    discount_type: type,
+                    discount_val: val,
+                    valid_plan: 'all',
+                    active: true
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('newCouponCode').value = '';
+                document.getElementById('newCouponVal').value = '';
+                loadAdminPricing();
+                alert(`✅ Coupon '${code}' created successfully!`);
+            }
+        } catch(e) {
+            alert('Error saving coupon.');
+        }
+    }
+
+    async function deleteCoupon(code) {
+        if (!confirm(`Delete coupon ${code}?`)) return;
+        try {
+            await fetch(`/api/admin/coupons/${code}`, {
+                method: 'DELETE',
+                headers: adminHeaders()
+            });
+            loadAdminPricing();
+        } catch(e) {}
+    }
+
+    async function toggleUserStatus(id, currentStatus) {
+        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
+        await fetch(`/api/admin/users/${id}/status`, {
+            method: 'PUT',
+            headers: adminHeaders(),
+            body: JSON.stringify({ status: newStatus })
+        });
+        loadUsers();
+        loadPending();
+        refreshDashboard();
+    }
+
+    async function deleteUser(id, name) {
+        if (!confirm(`Delete user ${name}? This cannot be undone.`)) return;
+        await fetch(`/api/admin/users/${id}`, { method: 'DELETE', headers: adminHeaders() });
+        loadUsers();
+        loadPending();
+        refreshDashboard();
+    }
+
+    async function resetPassword(id) {
+        const newPass = prompt('Enter new password for this user:');
+        if (!newPass) return;
+        await fetch(`/api/admin/users/${id}/password`, {
+            method: 'PUT',
+            headers: adminHeaders(),
+            body: JSON.stringify({ password: newPass })
+        });
+        alert('Password updated!');
+    }
+
+    async function loadPending() {
+        try {
+            const res = await fetch('/api/admin/users', { headers: adminHeaders() });
+            const data = await res.json();
+            const pending = (data.users || []).filter(u => u.status === 'pending');
+            const tbody = document.getElementById('pendingTableBody');
+            if (!pending.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px;">✅ No pending registration requests!</td></tr>';
+            } else {
+                tbody.innerHTML = pending.map(u => `
+                    <tr>
+                        <td><strong>${u.name}</strong></td>
+                        <td>${u.email}</td>
+                        <td>${u.phone || '—'}</td>
+                        <td style="font-size:0.72rem;color:var(--text-dim);">${u.created_at ? u.created_at.slice(0,10) : '—'}</td>
+                        <td>
+                            <button class="btn-sm green" onclick="toggleUserStatus('${u.id}','pending')"><i class="fa-solid fa-check"></i> Approve</button>
+                            <button class="btn-sm red" onclick="deleteUser('${u.id}','${u.name}')"><i class="fa-solid fa-times"></i> Reject</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch(e) {}
+
+        // Also load purchase requests
+        await loadPurchases();
+    }
+
+    async function loadPurchases() {
+        try {
+            const res = await fetch('/api/admin/purchases', { headers: adminHeaders() });
+            const data = await res.json();
+            const purchases = data.purchases || [];
+            const tbody = document.getElementById('purchasesTableBody');
+            if (!purchases.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px;">No purchase requests received yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = purchases.map(p => `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td>${p.email}<div style="font-size:0.7rem;color:var(--text-dim);">${p.phone || ''}</div></td>
+                    <td><span class="indicator-pill enabled">${(p.plan_name || p.plan || 'pro').toUpperCase()} (${p.billing || 'monthly'})</span></td>
+                    <td style="font-family:'JetBrains Mono'; font-weight:700;">₹${p.amount || '0'}</td>
+                    <td style="font-size:0.72rem;color:var(--text-dim);">${p.created_at ? p.created_at.slice(0,16).replace('T',' ') : '—'}</td>
+                    <td>
+                        <span class="status-pill status-${p.status === 'approved' ? 'active' : 'pending'}">
+                            <span class="status-dot"></span> ${p.status === 'approved' ? 'Approved' : 'Pending Payment'}
+                        </span>
+                    </td>
+                    <td>
+                        ${p.status !== 'approved' ? `
+                            <button class="btn-sm green" onclick="approvePurchase('${p.id}')">
+                                <i class="fa-solid fa-check"></i> Approve & Activate
+                            </button>
+                        ` : `
+                            <span style="font-size:0.75rem; color:var(--green);"><i class="fa-solid fa-circle-check"></i> Active</span>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            document.getElementById('purchasesTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px;">Error loading purchases.</td></tr>';
+        }
+    }
+
+    async function approvePurchase(purchaseId) {
+        if (!confirm('Payment verify ho gaya? User ka account activate karein?')) return;
+        try {
+            const res = await fetch(`/api/admin/purchases/${purchaseId}/approve`, {
+                method: 'PUT',
+                headers: adminHeaders()
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Purchase approved and User plan activated!');
+                loadPending();
+                refreshDashboard();
+            } else {
+                alert('Failed to approve purchase.');
+            }
+        } catch(e) {
+            alert('Error approving purchase.');
+        }
+    }
+
+
+    function showAddUser() {
+        showSection('users');
+        document.getElementById('addUserModal').classList.add('open');
+    }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    async function addUser() {
+        const name = document.getElementById('newUserName').value.trim();
+        const email = document.getElementById('newUserEmail').value.trim();
+        const phone = document.getElementById('newUserPhone').value.trim();
+        const password = document.getElementById('newUserPassword').value;
+        const plan = document.getElementById('newUserPlan').value;
+        const status = document.getElementById('newUserStatus').value;
+        if (!name || !email || !password) { alert('Name, email and password required!'); return; }
+        const res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: adminHeaders(),
+            body: JSON.stringify({ name, email, phone, password, plan, status })
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeModal('addUserModal');
+            loadUsers();
+            alert('User created!');
+        } else {
+            alert(data.error || 'Failed to create user');
+        }
+    }
+
+    // ===================== INDICATORS =====================
+    const INDICATORS = [
+        { key: 'ema_8', label: 'EMA (8) — Fast Exponential Moving Average', category: 'Trend' },
+        { key: 'sma_11', label: 'SMA (11) — Simple Moving Average Baseline', category: 'Trend' },
+        { key: 'rsi_14', label: 'RSI (14) — Relative Strength Index', category: 'Momentum' },
+        { key: 'rsi_sma_20', label: 'RSI SMA (20) — RSI Signal Smoothing', category: 'Momentum' },
+        { key: 'macd', label: 'MACD (12, 26) — Moving Average Convergence Divergence', category: 'Momentum' },
+        { key: 'macd_signal', label: 'MACD Signal Line (9)', category: 'Momentum' },
+        { key: 'macd_hist', label: 'MACD Histogram', category: 'Momentum' },
+        { key: 'rrb_val', label: 'MultiSmaEmaBb_RRB Indicator Value', category: 'Custom' },
+        { key: 'rrb_ratio', label: 'RRB Ratio (LTP ÷ Indicator)', category: 'Custom' },
+        { key: 'pivot', label: 'Pivot Point (P)', category: 'Support/Resistance' },
+        { key: 'r1', label: 'Resistance 1 (R1)', category: 'Support/Resistance' },
+        { key: 'r2', label: 'Resistance 2 (R2)', category: 'Support/Resistance' },
+        { key: 's1', label: 'Support 1 (S1)', category: 'Support/Resistance' },
+        { key: 's2', label: 'Support 2 (S2)', category: 'Support/Resistance' },
+        { key: 'tech_signal', label: 'Technical Signal (BUY / SELL / NEUTRAL)', category: 'Signal' },
+        { key: 'volume', label: 'Volume (Daily Traded Shares)', category: 'Market Data' },
+        { key: 'change_1w', label: '1-Week Change & % Change', category: 'Timeframes' },
+        { key: 'change_1m', label: '1-Month Change & % Change', category: 'Timeframes' },
+    ];
+
+    let indicatorSettings = {};
+
+    function loadIndicators() {
+        try {
+            indicatorSettings = JSON.parse(localStorage.getItem('admin_indicators') || '{}');
+        } catch(e) { indicatorSettings = {}; }
+        INDICATORS.forEach(ind => { if (indicatorSettings[ind.key] === undefined) indicatorSettings[ind.key] = true; });
+
+        const categories = [...new Set(INDICATORS.map(i => i.category))];
+        const container = document.getElementById('indicatorControls');
+        container.innerHTML = categories.map(cat => {
+            const inds = INDICATORS.filter(i => i.category === cat);
+            return `
+                <div style="padding: 10px 20px 0; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em;">${cat}</div>
+                ${inds.map(ind => `
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">${ind.label}</div>
+                        <div class="ctrl-desc">Key: <code style="font-family: monospace; font-size: 0.7rem; color: var(--accent);">${ind.key}</code></div>
+                    </div>
+                    <div class="ctrl-action">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ind_${ind.key}" ${indicatorSettings[ind.key] ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                `).join('')}
+            `;
+        }).join('');
+    }
+
+    function saveIndicatorSettings() {
+        INDICATORS.forEach(ind => {
+            indicatorSettings[ind.key] = document.getElementById('ind_' + ind.key)?.checked ?? true;
+        });
+        localStorage.setItem('admin_indicators', JSON.stringify(indicatorSettings));
+        // Push to server
+        fetch('/api/admin/settings/indicators', {
+            method: 'POST',
+            headers: adminHeaders(),
+            body: JSON.stringify({ indicators: indicatorSettings })
+        }).then(() => alert('✅ Indicator settings saved!'));
+    }
+
+    // ===================== STOCK STATS =====================
+    async function loadStockStats() {
+        try {
+            const res = await fetch('/api/stocks');
+            const stocks = await res.json();
+            const halal = stocks.filter(s => s.is_halal !== false);
+            document.getElementById('stockTotal2').textContent = stocks.length;
+            document.getElementById('stockHalal2').textContent = halal.length;
+            document.getElementById('stockNotHalal2').textContent = stocks.length - halal.length;
+
+            // Sector controls
+            const sectors = [...new Set(stocks.map(s => s.sector || 'General'))].sort();
+            const container = document.getElementById('sectorControls');
+            let savedSectors = JSON.parse(localStorage.getItem('admin_sectors') || '{}');
+            container.innerHTML = sectors.map(sec => {
+                const cnt = stocks.filter(s => (s.sector || 'General') === sec).length;
+                const enabled = savedSectors[sec] !== false;
+                return `
+                <div class="ctrl-row">
+                    <div class="ctrl-info">
+                        <div class="ctrl-label">${sec}</div>
+                        <div class="ctrl-desc">${cnt} stocks in this sector</div>
+                    </div>
+                    <div class="ctrl-action">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sec_${sec.replace(/\s/g,'_')}" ${enabled ? 'checked' : ''} onchange="saveSectorToggle('${sec}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {}
+    }
+
+    function saveSectorToggle(sec, enabled) {
+        let saved = JSON.parse(localStorage.getItem('admin_sectors') || '{}');
+        saved[sec] = enabled;
+        localStorage.setItem('admin_sectors', JSON.stringify(saved));
+    }
+
+    // ===================== LOGS =====================
+    let logInterval;
+    function startLogPolling() {
+        if (logInterval) clearInterval(logInterval);
+        appendLog('INFO', 'Admin log viewer connected');
+        logInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/admin/logs', { headers: adminHeaders() });
+                const data = await res.json();
+                if (data.logs) {
+                    const terminal = document.getElementById('logTerminal');
+                    data.logs.forEach(line => {
+                        const div = document.createElement('div');
+                        div.className = 'log-line';
+                        const isErr = line.toLowerCase().includes('error') || line.toLowerCase().includes('fail');
+                        const isOk = line.toLowerCase().includes('success') || line.toLowerCase().includes('✅');
+                        div.innerHTML = `<span class="ts">[${new Date().toLocaleTimeString()}] </span><span class="msg ${isErr ? 'error' : isOk ? 'success' : ''}">${line}</span>`;
+                        terminal.appendChild(div);
+                    });
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+            } catch(e) {}
+        }, 5000);
+    }
+
+    function appendLog(type, msg) {
+        const terminal = document.getElementById('logTerminal');
+        const div = document.createElement('div');
+        div.className = 'log-line';
+        div.innerHTML = `<span class="ts">[${new Date().toLocaleTimeString()}] </span><span class="msg ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}">${msg}</span>`;
+        terminal.appendChild(div);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearLogs() {
+        document.getElementById('logTerminal').innerHTML = '';
+    }
+
+    // ===================== CONFIG =====================
+    async function loadConfig() {
+        try {
+            const res = await fetch('/api/status');
+            const s = await res.json();
+            // Only show masked/partial credential hints
+            if (s.api_key) document.getElementById('cfgApiKey').placeholder = s.api_key + ' (saved)';
+            if (s.username) document.getElementById('cfgClientId').placeholder = s.username + ' (saved)';
+        } catch(e) {}
+    }
+
+    // Toggle field visibility (show/hide password)
+    function toggleField(id, btn) {
+        const el = document.getElementById(id);
+        el.type = el.type === 'text' ? 'password' : 'text';
+        btn.querySelector('i').className = el.type === 'text' ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    }
+
+    async function connectAngelWithSecret() {
+        const api_key = document.getElementById('cfgApiKey').value.trim();
+        const username = document.getElementById('cfgClientId').value.trim();
+        const pwd = document.getElementById('cfgPin').value.trim();
+        const totp_secret = document.getElementById('cfgTotp').value.trim();
+        const resultEl = document.getElementById('angelConnectResult');
+
+        if (!totp_secret) {
+            alert('Please enter your 32-character Base32 TOTP Secret key!');
+            return;
+        }
+
+        resultEl.style.display = 'block';
+        resultEl.style.background = 'rgba(0,210,255,0.1)';
+        resultEl.style.color = '#00d2ff';
+        resultEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting to Angel One with 32-char TOTP Secret...';
+
+        try {
+            const res = await fetch('/api/admin/connect_angel', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({
+                    api_key: api_key || null,
+                    username: username || null,
+                    pwd: pwd || null,
+                    totp_secret: totp_secret,
+                    totp_code: null
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                resultEl.style.background = 'rgba(0,230,118,0.15)';
+                resultEl.style.color = '#00e676';
+                resultEl.innerHTML = `✅ <strong>Connected!</strong> ${data.message}`;
+                refreshDashboard();
+            } else {
+                resultEl.style.background = 'rgba(255,61,113,0.15)';
+                resultEl.style.color = '#ff3d71';
+                resultEl.innerHTML = `❌ <strong>Connection Failed:</strong> ${data.error}`;
+            }
+        } catch(e) {
+            resultEl.style.background = 'rgba(255,61,113,0.15)';
+            resultEl.style.color = '#ff3d71';
+            resultEl.innerHTML = `❌ Error communicating with server.`;
+        }
+    }
+
+    async function connectAngelWithOtp() {
+        const api_key = document.getElementById('cfgApiKey').value.trim();
+        const username = document.getElementById('cfgClientId').value.trim();
+        const pwd = document.getElementById('cfgPin').value.trim();
+        const totp_code = document.getElementById('cfgTotpCode').value.trim();
+        const resultEl = document.getElementById('angelConnectResult');
+
+        if (!totp_code || totp_code.length < 6) {
+            alert('Please enter current 6-digit live OTP from your Authenticator app!');
+            return;
+        }
+
+        resultEl.style.display = 'block';
+        resultEl.style.background = 'rgba(0,230,118,0.1)';
+        resultEl.style.color = '#00e676';
+        resultEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating with 6-digit live OTP...';
+
+        try {
+            const res = await fetch('/api/admin/connect_angel', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({
+                    api_key: api_key || null,
+                    username: username || null,
+                    pwd: pwd || null,
+                    totp_secret: null,
+                    totp_code: totp_code
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                resultEl.style.background = 'rgba(0,230,118,0.15)';
+                resultEl.style.color = '#00e676';
+                resultEl.innerHTML = `✅ <strong>Connected!</strong> ${data.message}`;
+                document.getElementById('cfgTotpCode').value = '';
+                refreshDashboard();
+            } else {
+                resultEl.style.background = 'rgba(255,61,113,0.15)';
+                resultEl.style.color = '#ff3d71';
+                resultEl.innerHTML = `❌ <strong>Authentication Failed:</strong> ${data.error}`;
+            }
+        } catch(e) {
+            resultEl.style.background = 'rgba(255,61,113,0.15)';
+            resultEl.style.color = '#ff3d71';
+            resultEl.innerHTML = `❌ Error communicating with server.`;
+        }
+    }
+
+    async function saveCredsOnly() {
+        const api_key = document.getElementById('cfgApiKey').value.trim();
+        const username = document.getElementById('cfgClientId').value.trim();
+        const pwd = document.getElementById('cfgPin').value;
+        const totp_secret = document.getElementById('cfgTotp').value.trim();
+        if (!api_key || !username || !pwd) { alert('API key, Client ID aur PIN sab zaroori hain!'); return; }
+        try {
+            const res = await fetch('/api/admin/save_credentials', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({ api_key, username, pwd, totp_secret })
+            });
+            const data = await res.json();
+            alert(data.success ? '✅ Credentials successfully saved!' : ('❌ ' + (data.error || 'Failed')));
+        } catch(e) {
+            alert('❌ Error saving credentials.');
+        }
+    }
+
+    // Legacy aliases
+    async function saveCreds() { await saveCredsOnly(); }
+    async function saveAngelCreds() { await saveCredsOnly(); }
+    async function reconnectAngel() { await connectAngelWithOtp(); }
+
+    async function saveConfig() {
+        const newUser = document.getElementById('cfgAdminUser').value.trim();
+        const newPass = document.getElementById('cfgAdminPass').value;
+        if (!newUser) { alert('Admin username cannot be empty!'); return; }
+        try {
+            const res = await fetch('/api/admin/change_credentials', {
+                method: 'POST',
+                headers: adminHeaders(),
+                body: JSON.stringify({ admin_user: newUser, admin_password: newPass || null })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('admin_username', newUser);
+                if (newPass) localStorage.setItem('admin_password', newPass);
+                alert('✅ Config saved successfully!' + (newPass ? ' Password updated.' : ''));
+            } else {
+                alert('❌ ' + (data.error || 'Failed to save config'));
+            }
+        } catch(e) {
+            alert('❌ Error updating configuration.');
+        }
+    }
+
+    function saveAccessSettings() {
+        const settings = {
+            maxUsers: document.getElementById('maxUsers').value,
+            sessionTimeout: document.getElementById('sessionTimeout').value,
+            requireLogin: document.getElementById('requireLogin').checked,
+            allowRegister: document.getElementById('allowRegister').checked,
+            stockLimit: document.getElementById('stockLimit').value
+        };
+        fetch('/api/admin/settings/access', {
+            method: 'POST',
+            headers: adminHeaders(),
+            body: JSON.stringify(settings)
+        }).then(() => alert('✅ Access settings saved!'));
+    }
+
+    async function syncStocks() {
+        const btn = document.querySelector('[onclick="syncStocks()"]') || { disabled: false, innerHTML: '' };
+        btn.disabled = true;
+        try {
+            await fetch('/api/sync_tokens', { method: 'POST' });
+            alert('✅ Stock sync triggered!');
+        } catch(e) { alert('Error triggering sync'); }
+        btn.disabled = false;
+    }
+
+    // ===================== INIT =====================
+    refreshDashboard();
+</script>
+</body>
+</html>

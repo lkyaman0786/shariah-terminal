@@ -1,0 +1,632 @@
+[
+    {
+        "Symbol": "INFY",
+        "Company_Name": "Infosys Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "TCS",
+        "Company_Name": "Tata Consultancy Services Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "HCLTECH",
+        "Company_Name": "HCL Technologies Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "WIPRO",
+        "Company_Name": "Wipro Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "LTIM",
+        "Company_Name": "LTIMindtree Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "PERSISTENT",
+        "Company_Name": "Persistent Systems Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "COFORGE",
+        "Company_Name": "Coforge Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "MPHASIS",
+        "Company_Name": "Mphasis Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "KPITTECH",
+        "Company_Name": "KPIT Technologies Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "TATAELXSI",
+        "Company_Name": "Tata Elxsi Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "CYIENT",
+        "Company_Name": "Cyient Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "ZENSARTECH",
+        "Company_Name": "Zensar Technologies Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "SONATSOFTW",
+        "Company_Name": "Sonata Software Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "BSOFT",
+        "Company_Name": "Birlasoft Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "HINDUNILVR",
+        "Company_Name": "Hindustan Unilever Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "NESTLEIND",
+        "Company_Name": "Nestle India Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "BRITANNIA",
+        "Company_Name": "Britannia Industries Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "TATACONSUM",
+        "Company_Name": "Tata Consumer Products Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "DABUR",
+        "Company_Name": "Dabur India Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "MARICO",
+        "Company_Name": "Marico Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "COLPAL",
+        "Company_Name": "Colgate-Palmolive (India) Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "PGHH",
+        "Company_Name": "Procter & Gamble Health Limited",
+        "Sector": "Healthcare"
+    },
+    {
+        "Symbol": "GILLETTE",
+        "Company_Name": "Gillette India Limited",
+        "Sector": "FMCG"
+    },
+    {
+        "Symbol": "BALRAMCHIN",
+        "Company_Name": "Balrampur Chini Mills Limited",
+        "Sector": "Sugar & FMCG"
+    },
+    {
+        "Symbol": "SUNPHARMA",
+        "Company_Name": "Sun Pharmaceutical Industries Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "CIPLA",
+        "Company_Name": "Cipla Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "DIVISLAB",
+        "Company_Name": "Divi's Laboratories Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "DRREDDY",
+        "Company_Name": "Dr. Reddy's Laboratories Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "APOLLOHOSP",
+        "Company_Name": "Apollo Hospitals Enterprise Limited",
+        "Sector": "Healthcare"
+    },
+    {
+        "Symbol": "LUPIN",
+        "Company_Name": "Lupin Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "AUBROPHARMA",
+        "Company_Name": "Aurobindo Pharma Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "BIOCON",
+        "Company_Name": "Biocon Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "TORNTPHARM",
+        "Company_Name": "Torrent Pharmaceuticals Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "ZYDUSLIFE",
+        "Company_Name": "Zydus Lifesciences Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "ALKEM",
+        "Company_Name": "Alkem Laboratories Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "GLENMARK",
+        "Company_Name": "Glenmark Pharmaceuticals Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "IPCALAB",
+        "Company_Name": "Ipca Laboratories Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "MANKIND",
+        "Company_Name": "Mankind Pharma Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "SANOFI",
+        "Company_Name": "Sanofi India Limited",
+        "Sector": "Pharmaceuticals"
+    },
+    {
+        "Symbol": "ASIANPAINT",
+        "Company_Name": "Asian Paints Limited",
+        "Sector": "Consumer Durables"
+    },
+    {
+        "Symbol": "BERGEPAINT",
+        "Company_Name": "Berger Paints India Limited",
+        "Sector": "Consumer Durables"
+    },
+    {
+        "Symbol": "PIDILITIND",
+        "Company_Name": "Pidilite Industries Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "SRF",
+        "Company_Name": "SRF Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "LINDEINDIA",
+        "Company_Name": "Linde India Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "SOLARINDS",
+        "Company_Name": "Solar Industries India Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "AARTIIND",
+        "Company_Name": "Aarti Industries Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "ATUL",
+        "Company_Name": "Atul Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "DEEPAKNTR",
+        "Company_Name": "Deepak Nitrite Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "NAVINFLUOR",
+        "Company_Name": "Navin Fluorine International Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "TATACHEM",
+        "Company_Name": "Tata Chemicals Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "FLUOROCHEM",
+        "Company_Name": "Gujarat Fluorochemicals Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "CLEAN",
+        "Company_Name": "Clean Science and Technology Limited",
+        "Sector": "Chemicals"
+    },
+    {
+        "Symbol": "ULTRACEMCO",
+        "Company_Name": "UltraTech Cement Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "GRASIM",
+        "Company_Name": "Grasim Industries Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "SHREECEM",
+        "Company_Name": "Shree Cement Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "AMBUJACEM",
+        "Company_Name": "Ambuja Cements Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "ACC",
+        "Company_Name": "ACC Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "DALBHARAT",
+        "Company_Name": "Dalmia Bharat Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "JKCEMENT",
+        "Company_Name": "JK Cement Limited",
+        "Sector": "Materials"
+    },
+    {
+        "Symbol": "M&M",
+        "Company_Name": "Mahindra & Mahindra Limited",
+        "Sector": "Automobile"
+    },
+    {
+        "Symbol": "MARUTI",
+        "Company_Name": "Maruti Suzuki India Limited",
+        "Sector": "Automobile"
+    },
+    {
+        "Symbol": "EICHERMOT",
+        "Company_Name": "Eicher Motors Limited",
+        "Sector": "Automobile"
+    },
+    {
+        "Symbol": "TIINDIA",
+        "Company_Name": "Tube Investments of India Limited",
+        "Sector": "Engineering"
+    },
+    {
+        "Symbol": "BOSCHLTD",
+        "Company_Name": "Bosch Limited",
+        "Sector": "Auto Ancillaries"
+    },
+    {
+        "Symbol": "MRF",
+        "Company_Name": "MRF Limited",
+        "Sector": "Auto Ancillaries"
+    },
+    {
+        "Symbol": "BALKRISIND",
+        "Company_Name": "Balkrishna Industries Limited",
+        "Sector": "Auto Ancillaries"
+    },
+    {
+        "Symbol": "SONACOMS",
+        "Company_Name": "Sona BLW Precision Forgings Limited",
+        "Sector": "Auto Ancillaries"
+    },
+    {
+        "Symbol": "SIEMENS",
+        "Company_Name": "Siemens Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "ABB",
+        "Company_Name": "ABB India Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "BEL",
+        "Company_Name": "Bharat Electronics Limited",
+        "Sector": "Aerospace & Defense"
+    },
+    {
+        "Symbol": "HAL",
+        "Company_Name": "Hindustan Aeronautics Limited",
+        "Sector": "Aerospace & Defense"
+    },
+    {
+        "Symbol": "CUMMINSIND",
+        "Company_Name": "Cummins India Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "BHE",
+        "Company_Name": "Bharat Heavy Electricals Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "THERMAX",
+        "Company_Name": "Thermax Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "AIAENG",
+        "Company_Name": "AIA Engineering Limited",
+        "Sector": "Capital Goods"
+    },
+    {
+        "Symbol": "ONGC",
+        "Company_Name": "Oil & Natural Gas Corporation Limited",
+        "Sector": "Energy"
+    },
+    {
+        "Symbol": "OIL",
+        "Company_Name": "Oil India Limited",
+        "Sector": "Energy"
+    },
+    {
+        "Symbol": "PETRONET",
+        "Company_Name": "Petronet LNG Limited",
+        "Sector": "Energy"
+    },
+    {
+        "Symbol": "GAIL",
+        "Company_Name": "GAIL (India) Limited",
+        "Sector": "Energy"
+    },
+    {
+        "Symbol": "PAGEIND",
+        "Company_Name": "Page Industries Limited",
+        "Sector": "Textiles & Apparel"
+    },
+    {
+        "Symbol": "TRENTON",
+        "Company_Name": "Trent Limited",
+        "Sector": "Retail"
+    },
+    {
+        "Symbol": "DMART",
+        "Company_Name": "Avenue Supermarts Limited",
+        "Sector": "Retail"
+    },
+    {
+        "Symbol": "BATAINDIA",
+        "Company_Name": "Bata India Limited",
+        "Sector": "Footwear"
+    },
+    {
+        "Symbol": "RELAXO",
+        "Company_Name": "Relaxo Footwears Limited",
+        "Sector": "Footwear"
+    },
+    {
+        "Symbol": "KAIWARSPEC",
+        "Company_Name": "Kajaria Ceramics Limited",
+        "Sector": "Construction Materials"
+    },
+    {
+        "Symbol": "SOMANYCERA",
+        "Company_Name": "Somany Ceramics Limited",
+        "Sector": "Construction Materials"
+    },
+    {
+        "Symbol": "SUPREMEIND",
+        "Company_Name": "Supreme Industries Limited",
+        "Sector": "Plastics"
+    },
+    {
+        "Symbol": "ASTRAL",
+        "Company_Name": "Astral Limited",
+        "Sector": "Plastics / Building Materials"
+    },
+    {
+        "Symbol": "FINPIPE",
+        "Company_Name": "Finolex Industries Limited",
+        "Sector": "Plastics / Building Materials"
+    },
+    {
+        "Symbol": "POLYCAB",
+        "Company_Name": "Polycab India Limited",
+        "Sector": "Electrical Equipment"
+    },
+    {
+        "Symbol": "KEI",
+        "Company_Name": "KEI Industries Limited",
+        "Sector": "Electrical Equipment"
+    },
+    {
+        "Symbol": "HAVELLS",
+        "Company_Name": "Havells India Limited",
+        "Sector": "Electrical Equipment"
+    },
+    {
+        "Symbol": "CROMPTON",
+        "Company_Name": "Crompton Greaves Consumer Electricals Limited",
+        "Sector": "Electrical Equipment"
+    },
+    {
+        "Symbol": "VOLTAS",
+        "Company_Name": "Voltas Limited",
+        "Sector": "Consumer Electronics"
+    },
+    {
+        "Symbol": "BLUESTARCO",
+        "Company_Name": "Blue Star Limited",
+        "Sector": "Consumer Electronics"
+    },
+    {
+        "Symbol": "DIXON",
+        "Company_Name": "Dixon Technologies (India) Limited",
+        "Sector": "Electronics Manufacturing"
+    },
+    {
+        "Symbol": "AMBER",
+        "Company_Name": "Amber Enterprises India Limited",
+        "Sector": "Electronics Manufacturing"
+    },
+    {
+        "Symbol": "TITAN",
+        "Company_Name": "Titan Company Limited",
+        "Sector": "Gems, Jewellery & Watches"
+    },
+    {
+        "Symbol": "KALYANKJIL",
+        "Company_Name": "Kalyan Jewellers India Limited",
+        "Sector": "Gems, Jewellery & Watches"
+    },
+    {
+        "Symbol": "CONCOR",
+        "Company_Name": "Container Corporation of India Limited",
+        "Sector": "Logistics"
+    },
+    {
+        "Symbol": "BLUEDART",
+        "Company_Name": "Blue Dart Express Limited",
+        "Sector": "Logistics"
+    },
+    {
+        "Symbol": "TCIEXP",
+        "Company_Name": "TCI Express Limited",
+        "Sector": "Logistics"
+    },
+    {
+        "Symbol": "COROMANDEL",
+        "Company_Name": "Coromandel International Limited",
+        "Sector": "Chemicals & Fertilizers"
+    },
+    {
+        "Symbol": "PIIND",
+        "Company_Name": "PI Industries Limited",
+        "Sector": "Agrochemicals"
+    },
+    {
+        "Symbol": "UPL",
+        "Company_Name": "UPL Limited",
+        "Sector": "Agrochemicals"
+    },
+    {
+        "Symbol": "BAYERCROP",
+        "Company_Name": "Bayer CropScience Limited",
+        "Sector": "Agrochemicals"
+    },
+    {
+        "Symbol": "SUMICHEM",
+        "Company_Name": "Sumitomo Chemical India Limited",
+        "Sector": "Agrochemicals"
+    },
+    {
+        "Symbol": "JKPAPER",
+        "Company_Name": "JK Paper Limited",
+        "Sector": "Paper"
+    },
+    {
+        "Symbol": "CENTURYPLY",
+        "Company_Name": "Century Plyboards (India) Limited",
+        "Sector": "Building Materials"
+    },
+    {
+        "Symbol": "GREENPANEL",
+        "Company_Name": "Greenpanel Industries Limited",
+        "Sector": "Building Materials"
+    },
+    {
+        "Symbol": "TIMKEN",
+        "Company_Name": "Timken India Limited",
+        "Sector": "Bearings"
+    },
+    {
+        "Symbol": "SKFINDIA",
+        "Company_Name": "SKF India Limited",
+        "Sector": "Bearings"
+    },
+    {
+        "Symbol": "SCHAEFFLER",
+        "Company_Name": "Schaeffler India Limited",
+        "Sector": "Bearings"
+    },
+    {
+        "Symbol": "CARBORUNIV",
+        "Company_Name": "Carborundum Universal Limited",
+        "Sector": "Industrial Ceramics"
+    },
+    {
+        "Symbol": "GRINDWELL",
+        "Company_Name": "Grindwell Norton Limited",
+        "Sector": "Abrasives"
+    },
+    {
+        "Symbol": "VBL",
+        "Company_Name": "Varun Beverages Limited",
+        "Sector": "Beverages (Halal Compliant)"
+    },
+    {
+        "Symbol": "GODREJPROP",
+        "Company_Name": "Godrej Properties Limited",
+        "Sector": "Real Estate"
+    },
+    {
+        "Symbol": "DLF",
+        "Company_Name": "DLF Limited",
+        "Sector": "Real Estate"
+    },
+    {
+        "Symbol": "OBEROIRLTY",
+        "Company_Name": "Oberoi Realty Limited",
+        "Sector": "Real Estate"
+    },
+    {
+        "Symbol": "PNCINFRA",
+        "Company_Name": "PNC Infratech Limited",
+        "Sector": "Construction"
+    },
+    {
+        "Symbol": "KNRCON",
+        "Company_Name": "KNR Constructions Limited",
+        "Sector": "Construction"
+    },
+    {
+        "Symbol": "LT",
+        "Company_Name": "Larsen & Toubro Limited",
+        "Sector": "Infrastructure / Engineering"
+    },
+    {
+        "Symbol": "RELIANCE",
+        "Company_Name": "Reliance Industries Limited",
+        "Sector": "Conglomerate (Partial/Mixed Revenue)"
+    },
+    {
+        "Symbol": "KSOLVES",
+        "Company_Name": "Ksolves India Limited",
+        "Sector": "Information Technology"
+    },
+    {
+        "Symbol": "TIPSIND",
+        "Company_Name": "Tips Industries Limited",
+        "Sector": "Media & Entertainment"
+    },
+    {
+        "Symbol": "WAREEENER",
+        "Company_Name": "Waaree Renewables Technology Limited",
+        "Sector": "Renewable Energy"
+    }
+]

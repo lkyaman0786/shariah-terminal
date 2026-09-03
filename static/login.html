@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Shariah Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #080b12;
+            --card-border: rgba(255,255,255,0.09);
+            --accent: #00d2ff;
+            --green: #00e676;
+            --text: #e8ecf4;
+            --text-dim: rgba(232,236,244,0.55);
+            --red: #ff3d71;
+            --gold: #f9c74f;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,210,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 80% 80%, rgba(157,78,221,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 0%, rgba(0,230,118,0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.12; pointer-events: none; animation: drift 14s ease-in-out infinite; }
+        .orb1 { width: 400px; height: 400px; background: #00d2ff; top: -120px; left: -120px; }
+        .orb2 { width: 300px; height: 300px; background: #9d4edd; bottom: -80px; right: -80px; animation-delay: 5s; }
+        .orb3 { width: 200px; height: 200px; background: #00e676; top: 60%; left: 65%; animation-delay: 9s; }
+        @keyframes drift {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(30px,-20px) scale(1.05); }
+            66% { transform: translate(-20px,30px) scale(0.95); }
+        }
+        .grid-bg {
+            position: fixed; inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 44px 44px; pointer-events: none;
+        }
+        .login-wrapper { width: 100%; max-width: 430px; padding: 24px; position: relative; z-index: 10; }
+        .brand-header { text-align: center; margin-bottom: 32px; }
+        .brand-logo {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, rgba(0,210,255,0.2), rgba(157,78,221,0.2));
+            border: 1px solid rgba(0,210,255,0.3);
+            border-radius: 20px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 2rem; margin-bottom: 16px;
+            animation: glow 3s ease-in-out infinite;
+        }
+        @keyframes glow {
+            0%,100% { box-shadow: 0 0 30px rgba(0,210,255,0.2); }
+            50% { box-shadow: 0 0 55px rgba(0,210,255,0.4); }
+        }
+        .brand-title { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.05em; }
+        .brand-title span { color: var(--accent); }
+        .brand-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; }
+        /* Halal badge */
+        .halal-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-top: 10px;
+            padding: 5px 14px;
+            background: rgba(0,230,118,0.08);
+            border: 1px solid rgba(0,230,118,0.2);
+            border-radius: 20px;
+            font-size: 0.72rem; color: var(--green); font-weight: 600;
+        }
+        .login-card {
+            background: rgba(13,17,23,0.85);
+            border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 1px rgba(0,210,255,0.08) inset;
+        }
+        .auth-tabs {
+            display: flex; gap: 6px; margin-bottom: 24px;
+            background: rgba(255,255,255,0.03); border-radius: 10px; padding: 4px;
+        }
+        .auth-tab {
+            flex: 1; padding: 8px;
+            background: transparent; border: none; border-radius: 7px;
+            font-family: inherit; font-size: 0.8rem; font-weight: 600;
+            color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+        }
+        .auth-tab.active { background: rgba(0,210,255,0.12); color: var(--accent); }
+        .form-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .form-card-sub { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 22px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.76rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 0.02em; }
+        .input-wrap { position: relative; }
+        .input-wrap i.icon-left { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.82rem; }
+        .input-wrap input {
+            width: 100%; padding: 12px 14px 12px 38px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; font-family: inherit;
+            font-size: 0.87rem; color: var(--text); outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-wrap input:focus { border-color: rgba(0,210,255,0.4); box-shadow: 0 0 0 3px rgba(0,210,255,0.07); }
+        .input-wrap input::placeholder { color: rgba(232,236,244,0.28); }
+        .toggle-pw {
+            position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.82rem;
+        }
+        .btn-submit {
+            width: 100%; padding: 13px; margin-top: 6px;
+            background: linear-gradient(135deg, #00d2ff, #0094ff);
+            border: none; border-radius: 10px; font-family: inherit;
+            font-size: 0.9rem; font-weight: 700; color: #000; cursor: pointer;
+            letter-spacing: 0.03em; transition: all 0.25s; position: relative; overflow: hidden;
+        }
+        .btn-submit::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(255,255,255,0.1), transparent); }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,210,255,0.35); }
+        .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-submit.green-btn { background: linear-gradient(135deg, #00e676, #00b248); }
+        .btn-submit.green-btn:hover { box-shadow: 0 8px 25px rgba(0,230,118,0.3); }
+        .alert-box {
+            display: none; padding: 11px 14px; border-radius: 9px;
+            font-size: 0.81rem; margin-bottom: 16px;
+            border-left: 3px solid var(--red);
+            background: rgba(255,61,113,0.07); color: var(--red);
+        }
+        .alert-box.success { border-color: var(--green); background: rgba(0,230,118,0.07); color: var(--green); }
+        .alert-box.show { display: flex; align-items: center; gap: 8px; }
+        /* Plan teaser */
+        .plan-teaser {
+            margin-top: 18px;
+            padding: 14px;
+            background: rgba(249,199,79,0.06);
+            border: 1px solid rgba(249,199,79,0.18);
+            border-radius: 10px;
+            font-size: 0.78rem; text-align: center;
+        }
+        .plan-teaser strong { color: var(--gold); display: block; margin-bottom: 4px; }
+        .plan-teaser a { color: var(--accent); text-decoration: none; font-weight: 600; }
+        .plan-teaser a:hover { text-decoration: underline; }
+        .divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; font-size: 0.73rem; color: var(--text-dim); }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+        .login-footer { text-align: center; margin-top: 16px; font-size: 0.71rem; color: var(--text-dim); }
+        .reg-section { display: none; }
+        .login-section.hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fa-spin { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="grid-bg"></div>
+
+    <div class="login-wrapper">
+        <div class="brand-header">
+            <div class="brand-logo"><i class="fa-solid fa-moon"></i></div>
+            <div class="brand-title">SHARIAH <span>TERMINAL</span></div>
+            <div class="brand-sub">NSE Live Market Intelligence • Angel One SmartAPI</div>
+            <div class="halal-badge"><i class="fa-solid fa-certificate"></i> 100% Musaffa AAOIFI Halal Verified</div>
+        </div>
+
+        <div class="login-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                </button>
+                <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">
+                    <i class="fa-solid fa-user-plus"></i> Register
+                </button>
+            </div>
+
+            <div class="alert-box" id="alertBox">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="alertText"></span>
+            </div>
+
+            <!-- LOGIN -->
+            <div class="login-section" id="loginSection">
+                <div class="form-card-title">Welcome back 👋</div>
+                <div class="form-card-sub">Enter your credentials to access the terminal</div>
+
+                <div class="form-group">
+                    <label>Phone Number / Email</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user icon-left"></i>
+                        <input type="text" id="loginId" placeholder="9876543210 or user@email.com" autocomplete="username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock icon-left"></i>
+                        <input type="password" id="loginPwd" placeholder="••••••••" autocomplete="current-password">
+                        <button class="toggle-pw" onclick="togglePw('loginPwd',this)" type="button"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <button class="btn-submit" id="btnLogin" onclick="doLogin()">
+                    <i class="fa-solid fa-right-to-bracket"></i> Access Terminal
+                </button>
+
+                <div class="plan-teaser">
+                    <strong>📊 Don't have an account?</strong>
+                    Register for a free trial or <a href="/pricing">view plans & pricing</a>
+                </div>
+            </div>
+
+            <!-- REGISTER -->
+            <div class="reg-section" id="registerSection">
+                <div class="form-card-title">Create account 🚀</div>
+                <div class="form-card-sub">Register for free trial access — admin will approve within 24h</div>
+
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user icon-left"></i>
+                        <input type="text" id="regName" placeholder="Mohammed Ali Khan">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-envelope icon-left"></i>
+                        <input type="email" id="regEmail" placeholder="user@email.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-phone icon-left"></i>
+                        <input type="tel" id="regPhone" placeholder="9876543210">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock icon-left"></i>
+                        <input type="password" id="regPwd" placeholder="Create a strong password">
+                        <button class="toggle-pw" onclick="togglePw('regPwd',this)" type="button"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <div class="divider">or choose a plan</div>
+                <div style="text-align:center; margin-bottom: 16px;">
+                    <a href="/pricing" style="color:var(--accent); font-size:0.82rem; font-weight:600; text-decoration:none;">
+                        <i class="fa-solid fa-tag"></i> View Plans & Pricing
+                    </a>
+                </div>
+
+                <button class="btn-submit green-btn" onclick="doRegister()">
+                    <i class="fa-solid fa-user-plus"></i> Request Free Trial Access
+                </button>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            Secure Shariah-Compliant Market Intelligence &nbsp;•&nbsp; NSE Equities Only
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+            document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+            document.getElementById('loginSection').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('registerSection').style.display = tab === 'register' ? 'block' : 'none';
+            hideAlert();
+        }
+        function togglePw(id, btn) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'text' ? 'password' : 'text';
+            btn.querySelector('i').className = el.type === 'text' ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        }
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            document.getElementById('alertText').textContent = msg;
+            box.className = 'alert-box show' + (type === 'success' ? ' success' : '');
+            box.querySelector('i').className = type === 'success' ? 'fa-solid fa-check-circle' : 'fa-solid fa-circle-exclamation';
+        }
+        function hideAlert() { document.getElementById('alertBox').className = 'alert-box'; }
+
+        async function doLogin() {
+            const identifier = document.getElementById('loginId').value.trim();
+            const password = document.getElementById('loginPwd').value;
+            const btn = document.getElementById('btnLogin');
+            if (!identifier || !password) { showAlert('Phone/email aur password dono bharo.'); return; }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+            hideAlert();
+            try {
+                const res = await fetch('/api/terminal/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert('✅ Login successful! Redirecting...', 'success');
+                    sessionStorage.setItem('terminal_user', JSON.stringify(data.user));
+                    sessionStorage.setItem('terminal_token', data.token);
+                    setTimeout(() => window.location.href = '/', 700);
+                } else {
+                    showAlert(data.error || 'Login failed. Check credentials.');
+                }
+            } catch (e) { showAlert('Server se connect nahi ho pa raha. Server chalu hai?'); }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Access Terminal';
+        }
+
+        async function doRegister() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPwd').value;
+            if (!name || !email || !password) { showAlert('Naam, email aur password required hai.'); return; }
+            const btn = document.querySelector('#registerSection .btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating account...';
+            hideAlert();
+            try {
+                const res = await fetch('/api/terminal/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert('✅ ' + (data.message || 'Account created! Admin permission / approval ke baad aap access kar sakenge.'), 'success');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Submitted';
+                    setTimeout(() => switchTab('login'), 2000);
+                } else {
+                    showAlert(data.error || 'Registration failed.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Request Free Trial Access';
+                }
+            } catch (e) {
+                showAlert('Server error. Baad mein try karo.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Request Free Trial Access';
+            }
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    </script>
+</body>
+</html>
