@@ -30,10 +30,10 @@ This repository is pre-configured with `Procfile` and `Dockerfile` for one-click
 ## 🛡️ Admin Panel & Configuration
 
 - Admin URL: `http://yourdomain.com/admin`
-- Default Username: `admin`
-- Default Password: `admin@shariah123`
+- Default credentials are set during first setup. Change them immediately from the **Configuration** section.
 - Features:
   - **Angel One SmartAPI**: Connect via 32-character TOTP Secret Key (auto-login) or 6-digit live OTP.
   - **Live User Tracking**: Real-time view of clients currently active in the terminal.
   - **7-Day Free Trial Auto-Expiry**: Lockout countdown and plan validity management.
   - **Plans & Coupons**: Modify subscription prices and create promotional discount coupons.
+
