@@ -28,7 +28,9 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px 12px;
         }
         body::before {
             content: '';
@@ -159,6 +161,18 @@
         .login-section.hidden { display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .fa-spin { animation: spin 1s linear infinite; }
+
+        @media (max-width: 480px) {
+            body { padding: 16px 8px; }
+            .login-wrapper { padding: 4px; max-width: 100%; }
+            .login-card { padding: 22px 16px; border-radius: 16px; }
+            .brand-logo { width: 56px; height: 56px; font-size: 1.5rem; margin-bottom: 12px; }
+            .brand-title { font-size: 1.3rem; }
+            .brand-sub { font-size: 0.72rem; }
+            .brand-header { margin-bottom: 20px; }
+            .input-wrap input { padding: 12px 14px 12px 40px; font-size: 0.88rem; }
+            .btn-submit { padding: 13px; font-size: 0.88rem; }
+        }
     </style>
 </head>
 <body>

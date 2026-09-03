@@ -66,7 +66,8 @@ body {
     max-width: 100%;
     margin: 0 auto;
     padding: 16px 24px 40px;
-    overflow-x: auto;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 /* Header */
@@ -1718,7 +1719,7 @@ body {
     color: var(--text-muted);
 }
 
-/* Responsive */
+/* Responsive Media Queries */
 @media (max-width: 1200px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1730,28 +1731,235 @@ body {
 
 @media (max-width: 768px) {
     .app-container {
-        padding: 12px;
+        padding: 10px 8px 30px;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
     }
     .app-header {
         flex-direction: column;
-        gap: 14px;
-        align-items: flex-start;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+    }
+    .brand-section {
+        justify-content: space-between;
+        width: 100%;
+    }
+    .brand-text h1 {
+        font-size: 1.15rem;
+    }
+    .subtitle {
+        font-size: 0.68rem;
+    }
+    .market-time-pill {
+        align-self: flex-start;
+        padding: 4px 10px;
+        font-size: 0.75rem;
     }
     .header-actions {
         width: 100%;
-        justify-content: space-between;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        justify-content: flex-start;
     }
+    .header-actions .btn,
+    .header-actions .stream-badge {
+        font-size: 0.72rem;
+        padding: 5px 9px;
+    }
+    #terminalUserBadge {
+        padding: 4px 8px !important;
+        font-size: 0.72rem !important;
+        gap: 5px !important;
+    }
+
+    /* KPI Grid on Mobile */
     .kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+    .kpi-card {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+    .kpi-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        border-radius: 8px;
+    }
+    .kpi-val {
+        font-size: 1.05rem;
+    }
+    .kpi-title {
+        font-size: 0.68rem;
+    }
+
+    /* Controls & Filters */
+    .controls-card {
+        padding: 12px 10px;
+        gap: 10px;
+        margin-bottom: 14px;
     }
     .search-sort-row {
         flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+    .search-box {
+        width: 100%;
+        max-width: 100%;
+    }
+    .sort-box {
+        width: 100%;
+        max-width: 100%;
+    }
+    .custom-select {
+        width: 100%;
+        font-size: 0.78rem;
+        padding: 8px 12px;
+    }
+    .view-toggles {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .toggle-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 10px;
+    }
+
+    /* Horizontal scrollable pills on mobile */
+    .volume-filter-row,
+    .shariah-filter-row,
+    .timeframe-filter-row,
+    .signal-filter-row,
+    .mcap-filter-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        width: 100%;
+        overflow: hidden;
+    }
+    .filter-group-label {
+        font-size: 0.7rem;
+    }
+    .volume-pills,
+    .shariah-pills,
+    .timeframe-pills,
+    .signal-pills,
+    .mcap-pills,
+    .sector-pills {
+        width: 100%;
+        max-width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 2px 8px 2px;
+        gap: 6px;
+        scrollbar-width: thin;
+    }
+    .vol-pill,
+    .shariah-pill,
+    .tf-pill,
+    .signal-pill,
+    .mcap-pill,
+    .sector-pill {
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        padding: 5px 11px;
+    }
+
+    /* Table Mobile Optimizations */
+    .stock-container {
+        border-radius: var(--radius-md);
+        margin-bottom: 14px;
+    }
+    .table-responsive {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .fin-table {
+        min-width: 780px;
+    }
+    .fin-table th,
+    .fin-table td {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+    /* Sticky First Two Columns (Star + Stock Name) */
+    .fin-table th:nth-child(1),
+    .fin-table td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: #0d121d;
+    }
+    .fin-table th:nth-child(2),
+    .fin-table td:nth-child(2) {
+        position: sticky;
+        left: 36px;
+        z-index: 5;
+        background: #0d121d;
+        box-shadow: 3px 0 8px rgba(0, 0, 0, 0.45);
+    }
+    .fin-table th:nth-child(1),
+    .fin-table th:nth-child(2) {
+        z-index: 15;
+        background: rgba(10, 13, 20, 0.98);
+    }
+
+    /* Detail Modal */
+    .modal-card.modal-large {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 88vh !important;
+        padding: 14px !important;
+        margin: auto;
+        overflow-y: auto;
     }
     .detail-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .detail-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
     .pivot-ladder-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
+    }
+    .stock-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    .brand-text h1 {
+        font-size: 1.05rem;
+    }
+    .brand-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    .modal-card.modal-large {
+        width: 98vw !important;
+        max-width: 98vw !important;
+        padding: 10px !important;
     }
 }
 
