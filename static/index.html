@@ -12,12 +12,12 @@
     <script>
         // Strict Auth Guard: direct unauthenticated clients to /login immediately
         (function() {
-            const token = sessionStorage.getItem('terminal_token');
+            const token = localStorage.getItem('terminal_token') || sessionStorage.getItem('terminal_token');
             if (!token) {
                 window.location.replace('/login');
                 return;
             }
-            const userRaw = sessionStorage.getItem('terminal_user');
+            const userRaw = localStorage.getItem('terminal_user') || sessionStorage.getItem('terminal_user');
             let userId = null;
             try {
                 const u = JSON.parse(userRaw);
@@ -32,6 +32,8 @@
             .then(r => r.json())
             .then(res => {
                 if (!res || !res.valid) {
+                    localStorage.removeItem('terminal_token');
+                    localStorage.removeItem('terminal_user');
                     sessionStorage.removeItem('terminal_token');
                     sessionStorage.removeItem('terminal_user');
                     if (res && res.reason === 'expired') {
@@ -41,6 +43,7 @@
                         window.location.replace('/login');
                     }
                 } else if (res.user) {
+                    localStorage.setItem('terminal_user', JSON.stringify(res.user));
                     sessionStorage.setItem('terminal_user', JSON.stringify(res.user));
                     if (window.updateTerminalUserBadge) {
                         window.updateTerminalUserBadge(res.user);
@@ -399,7 +402,7 @@
         };
 
         (function() {
-            const userRaw = sessionStorage.getItem('terminal_user');
+            const userRaw = localStorage.getItem('terminal_user') || sessionStorage.getItem('terminal_user');
             if (userRaw) {
                 try {
                     const user = JSON.parse(userRaw);
@@ -410,7 +413,7 @@
 
         // Continuous Heartbeat: keeps user tracked as "Online Now" in Admin Panel
         setInterval(() => {
-            const userRaw = sessionStorage.getItem('terminal_user');
+            const userRaw = localStorage.getItem('terminal_user') || sessionStorage.getItem('terminal_user');
             if (userRaw) {
                 try {
                     const u = JSON.parse(userRaw);
@@ -424,6 +427,8 @@
                         .then(data => {
                             if (data && data.active === false && data.reason === 'expired') {
                                 alert('Aapka subscription ya trial expire ho chuka hai.');
+                                localStorage.removeItem('terminal_token');
+                                localStorage.removeItem('terminal_user');
                                 sessionStorage.clear();
                                 window.location.replace('/pricing?expired=true');
                             }
@@ -435,8 +440,9 @@
         }, 15000);
 
         function doTerminalLogout() {
-            sessionStorage.removeItem('terminal_token');
-            sessionStorage.removeItem('terminal_user');
+            localStorage.removeItem('terminal_token');
+            localStorage.removeItem('terminal_user');
+            sessionStorage.clear();
             window.location.href = '/login';
         }
     </script>

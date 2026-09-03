@@ -325,6 +325,8 @@
                 const data = await res.json();
                 if (data.success) {
                     showAlert('✅ Login successful! Redirecting...', 'success');
+                    localStorage.setItem('terminal_user', JSON.stringify(data.user));
+                    localStorage.setItem('terminal_token', data.token);
                     sessionStorage.setItem('terminal_user', JSON.stringify(data.user));
                     sessionStorage.setItem('terminal_token', data.token);
                     setTimeout(() => window.location.href = '/', 700);

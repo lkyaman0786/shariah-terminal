@@ -32,10 +32,102 @@ if not os.path.exists(STATIC_DIR):
     os.makedirs(STATIC_DIR, exist_ok=True)
 
 # ─────────────────────────────────────────────────────────────────────
-# USER & SETTINGS DATABASE (flat-file JSON, no external DB needed)
+# USER & SETTINGS DATABASE (Persistent Store: PostgreSQL / SQLite / Disk)
 # ─────────────────────────────────────────────────────────────────────
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+import sqlite3
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
+
+DATA_DIR = os.environ.get("DATA_DIR")
+if not DATA_DIR:
+    if os.path.exists("/var/data"):
+        DATA_DIR = "/var/data"
+    elif os.path.exists("/data"):
+        DATA_DIR = "/data"
+    else:
+        DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
+
+SQLITE_DB = os.path.join(DATA_DIR, "terminal_store.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+def get_db_connection():
+    if DATABASE_URL and psycopg2:
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            return conn, "postgres"
+        except Exception as e:
+            print("Postgres connection error, falling back to SQLite:", e)
+    conn = sqlite3.connect(SQLITE_DB)
+    return conn, "sqlite"
+
+def init_db_store():
+    try:
+        conn, db_type = get_db_connection()
+        cur = conn.cursor()
+        if db_type == "postgres":
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS terminal_store (
+                    key VARCHAR(64) PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS terminal_store (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("init_db_store error:", e)
+
+init_db_store()
+
+def store_get(key: str) -> Optional[str]:
+    try:
+        conn, db_type = get_db_connection()
+        cur = conn.cursor()
+        if db_type == "postgres":
+            cur.execute("SELECT value FROM terminal_store WHERE key = %s", (key,))
+        else:
+            cur.execute("SELECT value FROM terminal_store WHERE key = ?", (key,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        print(f"Error reading store key {key}:", e)
+        return None
+
+def store_set(key: str, value: str):
+    try:
+        conn, db_type = get_db_connection()
+        cur = conn.cursor()
+        if db_type == "postgres":
+            cur.execute("""
+                INSERT INTO terminal_store (key, value, updated_at)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+            """, (key, value))
+        else:
+            cur.execute("""
+                INSERT INTO terminal_store (key, value, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            """, (key, value))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error saving store key {key}:", e)
+
 USERS_FILE    = os.path.join(DATA_DIR, "users.json")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 LOGS_FILE     = os.path.join(DATA_DIR, "server_logs.txt")
@@ -80,19 +172,36 @@ def is_user_expired(user: dict) -> bool:
         return False
 
 def load_users() -> List[dict]:
-    if not os.path.exists(USERS_FILE):
-        demo = [
+    # 1. Try DB store first (Postgres or SQLite)
+    raw = store_get("users")
+    users = None
+    if raw:
+        try:
+            users = json.loads(raw)
+        except Exception:
+            pass
+
+    # 2. If not in DB, check local USERS_FILE for initial migration
+    if users is None and os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r") as f:
+                users = json.load(f)
+            if users:
+                store_set("users", json.dumps(users))
+        except Exception:
+            pass
+
+    # 3. Default demo user if completely empty
+    if not users:
+        users = [
             {"id": str(uuid.uuid4()), "name": "Demo User", "email": "trial@shariah.in",
              "phone": "9999999999", "password": _hash("demo123"),
              "plan": "pro", "plan_type": "paid", "status": "active",
              "is_lifetime": False, "expires_at": add_days_to_now(30),
              "created_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
         ]
-        with open(USERS_FILE, "w") as f:
-            json.dump(demo, f, indent=2)
-        return demo
-    with open(USERS_FILE, "r") as f:
-        users = json.load(f)
+        save_users(users)
+        return users
 
     # Auto-expire check
     modified = False
@@ -111,12 +220,32 @@ def load_users() -> List[dict]:
     return users
 
 def save_users(users: List[dict]):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+    try:
+        val = json.dumps(users, indent=2)
+        store_set("users", val)
+        with open(USERS_FILE, "w") as f:
+            f.write(val)
+    except Exception as e:
+        print("Error saving users:", e)
 
 def load_pricing() -> dict:
-    if not os.path.exists(PRICING_FILE):
-        return {
+    raw = store_get("pricing")
+    pricing = None
+    if raw:
+        try:
+            pricing = json.loads(raw)
+        except Exception:
+            pass
+    if pricing is None and os.path.exists(PRICING_FILE):
+        try:
+            with open(PRICING_FILE, "r") as f:
+                pricing = json.load(f)
+            if pricing:
+                store_set("pricing", json.dumps(pricing))
+        except Exception:
+            pass
+    if not pricing:
+        pricing = {
             "plans": {
                 "trial": {"name": "Free Trial", "price": 0, "duration_days": 7, "description": "Explore the platform — see how Halal investing works"},
                 "basic": {"name": "Basic", "monthly": 499, "yearly": 4188, "description": "All Halal stocks with live technical signals"},
@@ -125,12 +254,17 @@ def load_pricing() -> dict:
             },
             "coupons": []
         }
-    with open(PRICING_FILE, "r") as f:
-        return json.load(f)
+        save_pricing(pricing)
+    return pricing
 
 def save_pricing(data: dict):
-    with open(PRICING_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    try:
+        val = json.dumps(data, indent=2)
+        store_set("pricing", val)
+        with open(PRICING_FILE, "w") as f:
+            f.write(val)
+    except Exception as e:
+        print("Error saving pricing:", e)
 
 def load_settings() -> dict:
     defaults = {
@@ -144,20 +278,36 @@ def load_settings() -> dict:
         "indicators": {},
         "access": {}
     }
-    if not os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump(defaults, f, indent=2)
-        return defaults
-    with open(SETTINGS_FILE, "r") as f:
-        saved = json.load(f)
+    raw = store_get("settings")
+    saved = None
+    if raw:
+        try:
+            saved = json.loads(raw)
+        except Exception:
+            pass
+    if saved is None and os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r") as f:
+                saved = json.load(f)
+        except Exception:
+            pass
+    if not saved:
+        saved = defaults
+        save_settings(saved)
+        return saved
     for k, v in defaults.items():
         if k not in saved:
             saved[k] = v
     return saved
 
 def save_settings(settings: dict):
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f, indent=2)
+    try:
+        val = json.dumps(settings, indent=2)
+        store_set("settings", val)
+        with open(SETTINGS_FILE, "w") as f:
+            f.write(val)
+    except Exception as e:
+        print("Error saving settings:", e)
 
 def append_log(msg: str):
     try:
@@ -832,14 +982,31 @@ async def api_connect_angel(req: ConnectAngelRequest):
 PURCHASES_FILE = os.path.join(DATA_DIR, "purchases.json")
 
 def load_purchases():
-    if not os.path.exists(PURCHASES_FILE):
-        return []
-    with open(PURCHASES_FILE, "r") as f:
-        return json.load(f)
+    raw = store_get("purchases")
+    purchases = None
+    if raw:
+        try:
+            purchases = json.loads(raw)
+        except Exception:
+            pass
+    if purchases is None and os.path.exists(PURCHASES_FILE):
+        try:
+            with open(PURCHASES_FILE, "r") as f:
+                purchases = json.load(f)
+            if purchases:
+                store_set("purchases", json.dumps(purchases))
+        except Exception:
+            pass
+    return purchases if purchases is not None else []
 
 def save_purchases(purchases):
-    with open(PURCHASES_FILE, "w") as f:
-        json.dump(purchases, f, indent=2)
+    try:
+        val = json.dumps(purchases, indent=2)
+        store_set("purchases", val)
+        with open(PURCHASES_FILE, "w") as f:
+            f.write(val)
+    except Exception as e:
+        print("Error saving purchases:", e)
 
 @app.post("/api/terminal/purchase_request")
 async def purchase_request(req: PurchaseRequest):
