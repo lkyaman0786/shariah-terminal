@@ -6,3 +6,5 @@ requests
 websockets
 pydantic
 aiohttp
+beautifulsoup4
+lxml
