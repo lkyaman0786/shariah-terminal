@@ -7,3 +7,10 @@ env/
 .idea/
 .vscode/
 *.log
+
+# ─── Confidential / Sensitive Files ───
+credentials.py
+data/
+fundamentals_cache.json
+shariah_tokens.json
+"New Text Document.txt"
