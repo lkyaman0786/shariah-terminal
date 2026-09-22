@@ -13,4 +13,6 @@ credentials.py
 data/
 fundamentals_cache.json
 shariah_tokens.json
-"New Text Document.txt"
+New Text Document.txt
+*.sqlite
+*.db

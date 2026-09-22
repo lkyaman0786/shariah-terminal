@@ -414,7 +414,7 @@ class PurchaseRequest(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     stream_manager.loop = asyncio.get_running_loop()
-    creds = stream_manager.creds
+    creds = stream_manager.load_credentials()
     if creds.get("api_key") and creds.get("username") and creds.get("pwd") and creds.get("totp_secret"):
         success = stream_manager.authenticate_angel()
         if success:
@@ -923,6 +923,23 @@ async def admin_change_credentials(request: Request):
     save_settings(settings)
     append_log(f"Admin credentials updated (user: {new_user or 'unchanged'})")
     return JSONResponse({"success": True})
+
+
+@app.get("/api/admin/credentials")
+async def admin_get_credentials(request: Request):
+    """Retrieve saved Angel One credentials for auto-filling in Admin panel — admin only"""
+    if not check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    creds = stream_manager.load_credentials()
+    return JSONResponse({
+        "api_key": creds.get("api_key", ""),
+        "username": creds.get("username", ""),
+        "pwd": creds.get("pwd", ""),
+        "totp_secret": creds.get("totp_secret", ""),
+        "is_authenticated": stream_manager.is_authenticated,
+        "is_connected": stream_manager.is_connected,
+        "auth_error": stream_manager.auth_error
+    })
 
 
 @app.post("/api/admin/save_credentials")

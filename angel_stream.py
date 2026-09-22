@@ -51,26 +51,44 @@ class AngelStreamManager:
 
     def load_credentials(self) -> Dict[str, str]:
         creds = {
-            "api_key": "",
-            "username": "",
-            "pwd": "",
-            "totp_secret": "",
+            "api_key": os.environ.get("ANGEL_API_KEY", ""),
+            "username": os.environ.get("ANGEL_USERNAME", ""),
+            "pwd": os.environ.get("ANGEL_PIN", ""),
+            "totp_secret": os.environ.get("ANGEL_TOTP_SECRET", ""),
             "feed_token": "",
             "jwt_token": ""
         }
-        if os.path.exists(self.credentials_path):
+        
+        # 1. Try DB store first if server DB store is available
+        try:
+            import sys
+            if "server" in sys.modules:
+                from server import store_get
+                raw_db_creds = store_get("angel_credentials")
+                if raw_db_creds:
+                    db_creds = json.loads(raw_db_creds)
+                    if isinstance(db_creds, dict):
+                        if db_creds.get("api_key"): creds["api_key"] = db_creds.get("api_key")
+                        if db_creds.get("username"): creds["username"] = db_creds.get("username")
+                        if db_creds.get("pwd"): creds["pwd"] = str(db_creds.get("pwd"))
+                        if db_creds.get("totp_secret"): creds["totp_secret"] = db_creds.get("totp_secret")
+        except Exception as ex:
+            logger.debug(f"DB credentials load check note: {ex}")
+
+        # 2. Try credentials.py (local fallback & initial seed)
+        if (not creds["api_key"] or not creds["username"]) and os.path.exists(self.credentials_path):
             try:
                 namespace = {}
                 with open(self.credentials_path, "r", encoding="utf-8") as f:
                     code = f.read()
                 exec(code, namespace)
-                creds["api_key"] = namespace.get("api_key", "")
-                creds["username"] = namespace.get("username", "")
-                creds["pwd"] = str(namespace.get("pwd", ""))
-                creds["totp_secret"] = namespace.get("totp_secret", "")
-                creds["url"] = namespace.get("url", "")
+                if namespace.get("api_key"): creds["api_key"] = namespace.get("api_key")
+                if namespace.get("username"): creds["username"] = namespace.get("username")
+                if namespace.get("pwd"): creds["pwd"] = str(namespace.get("pwd"))
+                if namespace.get("totp_secret"): creds["totp_secret"] = namespace.get("totp_secret")
             except Exception as e:
-                logger.error(f"Error loading credentials: {e}")
+                logger.error(f"Error loading credentials.py: {e}")
+
         self.creds = creds
         return creds
 
@@ -81,8 +99,26 @@ pwd="{pwd}"
 totp_secret="{totp_secret}"
 url="https://www.google.com/"
 '''
-        with open(self.credentials_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        try:
+            with open(self.credentials_path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            logger.warning(f"Could not write credentials file: {e}")
+
+        # Save to DB store for persistent deployment across restarts / Render hosting
+        try:
+            import sys
+            if "server" in sys.modules:
+                from server import store_set
+                store_set("angel_credentials", json.dumps({
+                    "api_key": api_key,
+                    "username": username,
+                    "pwd": pwd,
+                    "totp_secret": totp_secret
+                }))
+        except Exception as e:
+            logger.error(f"Could not save credentials to DB store: {e}")
+
         self.load_credentials()
 
     def load_tokens(self):

@@ -2297,6 +2297,32 @@
             if (s.api_key) document.getElementById('cfgApiKey').placeholder = s.api_key + ' (saved)';
             if (s.username) document.getElementById('cfgClientId').placeholder = s.username + ' (saved)';
         } catch(e) {}
+    async function loadConfig() {
+        try {
+            const res = await fetch('/api/admin/credentials', { headers: adminHeaders() });
+            if (res.ok) {
+                const creds = await res.json();
+                if (creds.api_key) document.getElementById('cfgApiKey').value = creds.api_key;
+                if (creds.username) document.getElementById('cfgClientId').value = creds.username;
+                if (creds.pwd) document.getElementById('cfgPin').value = creds.pwd;
+                if (creds.totp_secret) document.getElementById('cfgTotp').value = creds.totp_secret;
+
+                const resultEl = document.getElementById('angelConnectResult');
+                if (resultEl && creds.is_authenticated) {
+                    resultEl.style.display = 'block';
+                    resultEl.style.background = 'rgba(0,230,118,0.15)';
+                    resultEl.style.color = '#00e676';
+                    resultEl.innerHTML = `✅ <strong>Connected!</strong> Angel One SmartAPI is Active & Streaming (User: ${creds.username}).`;
+                } else if (resultEl && creds.auth_error) {
+                    resultEl.style.display = 'block';
+                    resultEl.style.background = 'rgba(255,61,113,0.15)';
+                    resultEl.style.color = '#ff3d71';
+                    resultEl.innerHTML = `❌ <strong>Status:</strong> ${creds.auth_error}`;
+                }
+            }
+        } catch(e) {
+            console.error('Error loading credentials in admin config:', e);
+        }
     }
 
     // Toggle field visibility (show/hide password)
