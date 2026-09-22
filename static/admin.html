@@ -594,22 +594,43 @@
 
 <!-- Admin Login Gate -->
 <div id="adminLoginGate">
-    <div class="admin-login-box">
-        <div class="logo">🛡️</div>
+    <div class="admin-login-box" style="width: 420px; text-align: center;">
+        <div class="logo" style="font-size: 2.2rem; margin-bottom: 8px;">🛡️</div>
         <h2>Admin Dashboard</h2>
-        <p>Enter admin credentials to access control panel</p>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px;">Enter admin credentials to access control panel</p>
+        
+        <!-- Live Backend Ping Pill -->
+        <div id="loginServerPing" style="margin-bottom: 16px; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; background: rgba(0,210,255,0.08); border: 1px solid rgba(0,210,255,0.2); color: var(--accent); display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Checking Server Status...
+        </div>
+
         <div class="admin-field">
             <i class="fa-solid fa-user-shield"></i>
-            <input type="text" id="adminUser" placeholder="Admin username" value="admin">
+            <input type="text" id="adminUser" placeholder="Admin username (default: admin)" value="admin">
         </div>
         <div class="admin-field">
             <i class="fa-solid fa-key"></i>
             <input type="password" id="adminPass" placeholder="Admin password" onkeydown="if(event.key==='Enter') doAdminLogin()">
         </div>
-        <button class="btn-admin-login" onclick="doAdminLogin()">
+
+        <button class="btn-admin-login" id="btnAdminLogin" onclick="doAdminLogin()">
             <i class="fa-solid fa-shield-halved"></i> Enter Admin Panel
         </button>
-        <p class="admin-err" id="adminErr">❌ Wrong credentials. Default: admin / admin@shariah123</p>
+
+        <!-- Quick Auto-Fill Default Credentials -->
+        <button type="button" onclick="fillDefaultAdminCreds()" style="width: 100%; margin-top: 10px; padding: 9px; background: rgba(0,210,255,0.1); border: 1px solid rgba(0,210,255,0.3); border-radius: 10px; color: var(--accent); font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fill Default Credentials (admin / admin@shariah123)
+        </button>
+
+        <div id="adminErr" class="admin-err" style="display:none; margin-top: 14px; padding: 10px; background: rgba(255,61,113,0.1); border: 1px solid rgba(255,61,113,0.3); border-radius: 8px; color: var(--red); font-size: 0.78rem; text-align: left;"></div>
+
+        <!-- Instructions Box -->
+        <div style="margin-top: 16px; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.73rem; text-align: left; color: var(--text-dim);">
+            <div style="font-weight:700; color:#fff; margin-bottom:4px;"><i class="fa-solid fa-circle-info" style="color:var(--accent);"></i> Default Login Instructions:</div>
+            <div>• Username: <code style="color:var(--accent); font-weight:700;">admin</code></div>
+            <div>• Password: <code style="color:var(--green); font-weight:700;">admin@shariah123</code></div>
+            <div style="margin-top:4px; font-size:0.68rem; color:var(--text-dim);">(Note: Render free server takes ~10-15s to wake up if idle. If login feels slow, please wait a moment and retry).</div>
+        </div>
     </div>
 </div>
 
@@ -1483,15 +1504,65 @@
         };
     }
 
+    function fillDefaultAdminCreds() {
+        document.getElementById('adminUser').value = 'admin';
+        document.getElementById('adminPass').value = 'admin@shariah123';
+        const errEl = document.getElementById('adminErr');
+        if (errEl) {
+            errEl.style.display = 'block';
+            errEl.style.background = 'rgba(0,230,118,0.1)';
+            errEl.style.color = '#00e676';
+            errEl.style.borderColor = 'rgba(0,230,118,0.3)';
+            errEl.innerHTML = '✅ <strong>Default credentials pre-filled!</strong> Username: <code>admin</code> | Password: <code>admin@shariah123</code>. Click "Enter Admin Panel" below.';
+        }
+    }
+
+    async function checkLoginServerStatus() {
+        const pingEl = document.getElementById('loginServerPing');
+        if (!pingEl) return;
+        try {
+            const startTime = Date.now();
+            const res = await fetch('/api/status');
+            const latency = Date.now() - startTime;
+            if (res.ok) {
+                const status = await res.json();
+                pingEl.style.background = 'rgba(0,230,118,0.12)';
+                pingEl.style.color = '#00e676';
+                pingEl.style.borderColor = 'rgba(0,230,118,0.3)';
+                pingEl.innerHTML = `<span class="status-dot-pulse"></span> Backend Connected (${latency}ms) • ${status.total_stocks || 0} stocks active`;
+            } else {
+                pingEl.style.background = 'rgba(249,199,79,0.12)';
+                pingEl.style.color = '#f9c74f';
+                pingEl.innerHTML = `⚠️ Server Responded with status ${res.status}`;
+            }
+        } catch(e) {
+            pingEl.style.background = 'rgba(249,199,79,0.12)';
+            pingEl.style.color = '#f9c74f';
+            pingEl.innerHTML = `⏳ Server spin-up in progress (Render takes ~15s). Retry in a moment.`;
+        }
+    }
+    checkLoginServerStatus();
+
     async function doAdminLogin() {
         const u = document.getElementById('adminUser').value.trim();
         const p = document.getElementById('adminPass').value;
         const errEl = document.getElementById('adminErr');
+        const btnLogin = document.getElementById('btnAdminLogin');
+
         if (!u || !p) {
             errEl.style.display = 'block';
-            errEl.textContent = '❌ Please enter username and password.';
+            errEl.style.background = 'rgba(255,61,113,0.1)';
+            errEl.style.color = '#ff3d71';
+            errEl.style.borderColor = 'rgba(255,61,113,0.3)';
+            errEl.innerHTML = '❌ Please enter both Admin Username and Password. Click "Auto-Fill Default Credentials" if unsure.';
             return;
         }
+
+        if (btnLogin) {
+            btnLogin.disabled = true;
+            btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying Credentials...';
+        }
+        errEl.style.display = 'none';
 
         try {
             const res = await fetch('/api/admin/login', {
@@ -1500,7 +1571,7 @@
                 body: JSON.stringify({ username: u, password: p })
             });
             const data = await res.json();
-            if (data.success) {
+            if (res.ok && data.success) {
                 localStorage.setItem('admin_authed', '1');
                 localStorage.setItem('admin_token', data.token);
                 localStorage.setItem('admin_username', u);
@@ -1511,11 +1582,22 @@
                 refreshDashboard();
             } else {
                 errEl.style.display = 'block';
-                errEl.textContent = '❌ ' + (data.error || 'Wrong credentials');
+                errEl.style.background = 'rgba(255,61,113,0.12)';
+                errEl.style.color = '#ff3d71';
+                errEl.style.borderColor = 'rgba(255,61,113,0.3)';
+                errEl.innerHTML = `❌ <strong>Login Failed:</strong> ${data.error || 'Wrong Password!'}<br><span style="font-size:0.72rem; color:var(--text-dim);">Entered Username: "${u}". Default Admin Username is <strong>admin</strong> and Password is <strong>admin@shariah123</strong>.</span>`;
             }
         } catch(e) {
             errEl.style.display = 'block';
-            errEl.textContent = '❌ Error communicating with server.';
+            errEl.style.background = 'rgba(249,199,79,0.12)';
+            errEl.style.color = '#f9c74f';
+            errEl.style.borderColor = 'rgba(249,199,79,0.3)';
+            errEl.innerHTML = `⏳ <strong>Server Delay / Network Note:</strong> Could not connect to backend server right away. If hosting on Render free tier, server takes ~15 seconds to wake up. Please wait 5 seconds and click "Enter Admin Panel" again!`;
+        } finally {
+            if (btnLogin) {
+                btnLogin.disabled = false;
+                btnLogin.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Enter Admin Panel';
+            }
         }
     }
 

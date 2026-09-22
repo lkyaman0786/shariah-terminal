@@ -323,8 +323,13 @@ admin_sessions: set = set()
 
 def check_admin(request: Request) -> bool:
     token = request.headers.get("X-Admin-Token", "")
-    if token and token in admin_sessions:
-        return True
+    if token:
+        if token in admin_sessions:
+            return True
+        saved_session = store_get(f"admin_session_{token}")
+        if saved_session:
+            admin_sessions.add(token)
+            return True
 
     settings = load_settings()
     user = request.headers.get("X-Admin-User", "")
@@ -695,9 +700,10 @@ async def api_admin_login(req: AdminLoginRequest):
     if user_ok and pass_ok:
         token = str(uuid.uuid4())
         admin_sessions.add(token)
+        store_set(f"admin_session_{token}", u)
         append_log(f"Admin logged in successfully: {u}")
         return JSONResponse({"success": True, "token": token, "username": u})
-    return JSONResponse({"success": False, "error": "Invalid admin username or password"}, status_code=401)
+    return JSONResponse({"success": False, "error": "Invalid Admin Username or Password! Default is: admin / admin@shariah123"}, status_code=401)
 
 @app.post("/api/admin/logout")
 async def api_admin_logout(request: Request):
