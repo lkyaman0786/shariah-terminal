@@ -48,6 +48,7 @@ class AngelStreamManager:
         self.load_tokens()
         self.load_credentials()
         self.start_real_market_sync()
+        self.start_keepalive_watchdog()
 
     def load_credentials(self) -> Dict[str, str]:
         creds = {
@@ -88,6 +89,20 @@ class AngelStreamManager:
                 if namespace.get("totp_secret"): creds["totp_secret"] = namespace.get("totp_secret")
             except Exception as e:
                 logger.error(f"Error loading credentials.py: {e}")
+
+        # 3. Default fallback seed credentials for instant live WebSocket on cloud / Render hosting
+        if not creds["api_key"] or not creds["username"]:
+            creds["api_key"] = "yKh9jmp2"
+            creds["username"] = "M163733"
+            creds["pwd"] = "2131"
+            creds["totp_secret"] = "2AGI2HHL4D5Q6BH4EV3OZNY6QI"
+            try:
+                import sys
+                if "server" in sys.modules:
+                    from server import store_set
+                    store_set("angel_credentials", json.dumps(creds))
+            except Exception:
+                pass
 
         self.creds = creds
         return creds
@@ -525,6 +540,29 @@ url="https://www.google.com/"
             if s:
                 sectors.add(s)
         return sorted(list(sectors))
+
+    def start_keepalive_watchdog(self):
+        """Persistent 24/7 Watchdog to ensure Angel One SmartAPI WebSocket remains active and auto-reconnects"""
+        def watchdog_loop():
+            while self.is_running:
+                time.sleep(45)
+                try:
+                    if self.creds.get("api_key") and self.creds.get("totp_secret"):
+                        now = time.time()
+                        # If not connected, not authenticated, or no tick data received for over 90s
+                        needs_reconnect = not self.is_connected or not self.is_authenticated
+                        if self.last_feed_time and (now - self.last_feed_time) > 90:
+                            needs_reconnect = True
+
+                        if needs_reconnect:
+                            logger.info("24/7 Watchdog: Re-authenticating Angel One SmartAPI and reconnecting WebSocket...")
+                            if self.authenticate_angel():
+                                self.start_websocket()
+                except Exception as ex:
+                    logger.debug(f"Watchdog iteration note: {ex}")
+
+        w_thread = threading.Thread(target=watchdog_loop, daemon=True)
+        w_thread.start()
 
 # Singleton instance
 stream_manager = AngelStreamManager()

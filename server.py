@@ -436,14 +436,20 @@ async def get_index():
     return JSONResponse({"status": "UI building in progress"})
 
 @app.get("/login")
+@app.get("/login/")
+@app.get("/login.html")
 async def get_login():
     return FileResponse(os.path.join(STATIC_DIR, "login.html"))
 
 @app.get("/admin")
+@app.get("/admin/")
+@app.get("/admin.html")
 async def get_admin():
     return FileResponse(os.path.join(STATIC_DIR, "admin.html"))
 
 @app.get("/pricing")
+@app.get("/pricing/")
+@app.get("/pricing.html")
 async def get_pricing():
     return FileResponse(os.path.join(STATIC_DIR, "pricing.html"))
 
