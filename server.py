@@ -1414,20 +1414,47 @@ async def admin_delete_coupon(code: str, request: Request):
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+
+    # CRITICAL: set the event loop so _broadcast_tick can send ticks from Angel WS thread
+    if stream_manager.loop is None:
+        stream_manager.loop = asyncio.get_event_loop()
+
     stream_manager.subscribers.add(websocket)
-    # Send full snapshot immediately
-    await websocket.send_json({
-        "type": "snapshot",
-        "data": stream_manager.get_all_stocks(),
-        "status": {
-            "is_authenticated": stream_manager.is_authenticated,
-            "is_connected": stream_manager.is_connected,
-            "is_running": stream_manager.is_running
-        }
-    })
+
+    # Send full snapshot immediately on connect
+    try:
+        await websocket.send_json({
+            "type": "snapshot",
+            "data": stream_manager.get_all_stocks(),
+            "status": {
+                "is_authenticated": stream_manager.is_authenticated,
+                "is_connected": stream_manager.is_connected,
+                "is_running": stream_manager.is_running
+            }
+        })
+    except Exception:
+        pass
+
     try:
         while True:
-            msg = await websocket.receive_text()
+            # Also send periodic snapshot every 3 seconds as fallback
+            # (ensures UI always has fresh data even if Angel WS ticks slow down)
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
+            except asyncio.TimeoutError:
+                # Timeout is normal — send snapshot update
+                try:
+                    await websocket.send_json({
+                        "type": "snapshot",
+                        "data": stream_manager.get_all_stocks(),
+                        "status": {
+                            "is_authenticated": stream_manager.is_authenticated,
+                            "is_connected": stream_manager.is_connected,
+                            "is_running": stream_manager.is_running
+                        }
+                    })
+                except Exception:
+                    break
     except WebSocketDisconnect:
         stream_manager.subscribers.discard(websocket)
     except Exception:

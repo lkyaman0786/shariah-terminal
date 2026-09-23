@@ -12,9 +12,18 @@ import pyotp
 try:
     from SmartApi import SmartConnect
     from SmartApi.smartWebSocketV2 import SmartWebSocketV2
-except ImportError:
+    _SMARTAPI_OK = True
+except ImportError as _imp_err:
     SmartConnect = None
     SmartWebSocketV2 = None
+    _SMARTAPI_OK = False
+    print(f"[WARNING] smartapi-python import failed: {_imp_err}")
+    print("[WARNING] Try: pip install --force-reinstall websocket-client smartapi-python")
+except Exception as _gen_err:
+    SmartConnect = None
+    SmartWebSocketV2 = None
+    _SMARTAPI_OK = False
+    print(f"[WARNING] SmartApi unexpected error on import: {_gen_err}")
 
 from indicators import StockTechnicalCalculator
 
