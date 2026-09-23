@@ -1674,9 +1674,9 @@
 
         if (!u || !p) {
             errEl.style.display = 'block';
-            errEl.style.background = 'rgba(255,61,113,0.1)';
+            errEl.style.background = 'rgba(255,61,113,0.15)';
             errEl.style.color = '#ff3d71';
-            errEl.style.borderColor = 'rgba(255,61,113,0.3)';
+            errEl.style.borderColor = 'rgba(255,61,113,0.4)';
             errEl.innerHTML = '❌ Please enter both Username and Password.';
             return;
         }
@@ -1705,17 +1705,17 @@
                 refreshDashboard();
             } else {
                 errEl.style.display = 'block';
-                errEl.style.background = 'rgba(255,61,113,0.12)';
+                errEl.style.background = 'rgba(255,61,113,0.15)';
                 errEl.style.color = '#ff3d71';
-                errEl.style.borderColor = 'rgba(255,61,113,0.3)';
-                errEl.innerHTML = `❌ <strong>Login Failed:</strong> ${data.error || 'Wrong Password!'}`;
+                errEl.style.borderColor = 'rgba(255,61,113,0.4)';
+                errEl.innerHTML = `❌ <strong>Login Failed:</strong> ${data.error || 'Galat Password ya Username!'}`;
             }
         } catch(e) {
             errEl.style.display = 'block';
-            errEl.style.background = 'rgba(249,199,79,0.12)';
-            errEl.style.color = '#f9c74f';
-            errEl.style.borderColor = 'rgba(249,199,79,0.3)';
-            errEl.innerHTML = `⏳ <strong>Server Delay:</strong> Could not connect to backend server right away. If server is starting up, please try again in 5 seconds.`;
+            errEl.style.background = 'rgba(255,61,113,0.15)';
+            errEl.style.color = '#ff3d71';
+            errEl.style.borderColor = 'rgba(255,61,113,0.4)';
+            errEl.innerHTML = `❌ <strong>Connection Error:</strong> Server se connect nahi ho paya. Kripya server restart karke try karein.`;
         } finally {
             if (btnLogin) {
                 btnLogin.disabled = false;
@@ -1742,8 +1742,8 @@
         document.getElementById('adminLoginGate').style.display = 'none';
         const nameEl = document.getElementById('sidebarAdminUser');
         if (nameEl) nameEl.textContent = localStorage.getItem('admin_username') || 'Admin';
+        refreshDashboard();
     }
-    document.getElementById('adminPass').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
 
     // ===================== NAVIGATION =====================
     function showSection(id) {
@@ -1776,6 +1776,21 @@
                 fetch('/api/status'),
                 fetch('/api/admin/users', { headers: adminHeaders() })
             ]);
+
+            if (usersRes.status === 401) {
+                localStorage.removeItem('admin_authed');
+                localStorage.removeItem('admin_token');
+                document.getElementById('adminLoginGate').style.display = 'flex';
+                const errEl = document.getElementById('adminErr');
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.style.background = 'rgba(255,61,113,0.15)';
+                    errEl.style.color = '#ff3d71';
+                    errEl.style.borderColor = 'rgba(255,61,113,0.4)';
+                    errEl.innerHTML = '❌ Admin session expired. Please enter password again.';
+                }
+                return;
+            }
 
             const status = await statusRes.json();
             document.getElementById('stockCountDisplay').textContent = `${status.total_stocks} stocks synced`;

@@ -332,20 +332,20 @@ def check_admin(request: Request) -> bool:
             return True
 
     settings = load_settings()
-    user = request.headers.get("X-Admin-User", "")
+    user = (request.headers.get("X-Admin-User", "") or "").strip()
     pw   = request.headers.get("X-Admin-Pass", "")
-    stored_user = settings.get("admin_user", "admin")
+    stored_user = settings.get("admin_user", "admin").strip()
     stored_pass = settings.get("admin_password", _hash("admin@shariah123"))
 
     if not user and not pw:
         return False
 
-    user_ok = (user == stored_user or user == "admin" or not user)
+    user_ok = (user.lower() == stored_user.lower() or user.lower() == "admin" or not user)
+    hashed_p = _hash(pw)
     pass_ok = (
-        _hash(pw) == stored_pass or
+        hashed_p == stored_pass or
         pw == stored_pass or
-        pw == "admin@shariah123" or
-        _hash(pw) == _hash("admin@shariah123")
+        (stored_pass == _hash("admin@shariah123") and (pw == "admin@shariah123" or hashed_p == _hash("admin@shariah123")))
     )
     return user_ok and pass_ok
 
@@ -692,17 +692,17 @@ async def terminal_heartbeat(req: HeartbeatRequest):
 @app.post("/api/admin/login")
 async def api_admin_login(req: AdminLoginRequest):
     settings = load_settings()
-    stored_user = settings.get("admin_user", "admin")
+    stored_user = settings.get("admin_user", "admin").strip()
     stored_pass = settings.get("admin_password", _hash("admin@shariah123"))
     u = req.username.strip()
     p = req.password
 
-    user_ok = (u == stored_user or u == "admin")
+    user_ok = (u.lower() == stored_user.lower() or u.lower() == "admin")
+    hashed_p = _hash(p)
     pass_ok = (
-        _hash(p) == stored_pass or
+        hashed_p == stored_pass or
         p == stored_pass or
-        p == "admin@shariah123" or
-        _hash(p) == _hash("admin@shariah123")
+        (stored_pass == _hash("admin@shariah123") and (p == "admin@shariah123" or hashed_p == _hash("admin@shariah123")))
     )
     if user_ok and pass_ok:
         token = str(uuid.uuid4())
@@ -710,7 +710,7 @@ async def api_admin_login(req: AdminLoginRequest):
         store_set(f"admin_session_{token}", u)
         append_log(f"Admin logged in successfully: {u}")
         return JSONResponse({"success": True, "token": token, "username": u})
-    return JSONResponse({"success": False, "error": "Invalid Admin Username or Password! Default is: admin / admin@shariah123"}, status_code=401)
+    return JSONResponse({"success": False, "error": "Galat Admin Username ya Password! Kripya sahi credentials enter karein."}, status_code=401)
 
 @app.post("/api/admin/logout")
 async def api_admin_logout(request: Request):

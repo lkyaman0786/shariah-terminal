@@ -309,31 +309,25 @@ url="https://www.google.com/"
 
         def sync_loop():
             logger.info(f"Background Sync Active for {len(self.tokens_map)} Shariah Stocks...")
-            
-            # Prioritize top 300 stocks (including user watchlist) first
-            top_watchlist = [
-                'CHENNPETRO', 'MGL', 'FILATEX', 'KPRMILL', 'VIKRAMSOLR', 'TIMETECHNO', 
-                'KAYNES', 'CUPID', 'CHOLAHLDNG', 'SKM', 'INTELLECT', 'VINCOFE', 'SANDUMA', 
-                'RGL', 'GENUSPOWER', 'UPL', 'TCS', 'INFY', 'HCLTECH', 'WIPRO', 'LTIM', 
-                'TECHM', 'PERSISTENT', 'COFORGE', 'HINDUNILVR', 'SUNPHARMA', 'CIPLA', 
-                'TITAN', 'MARUTI', 'HAL', 'BEL', 'SIEMENS', 'PIDILITIND', 'BHARTIARTL',
-                'NTPC', 'TATAPOWER', 'SUZLON', 'WAAREEENER', 'COALINDIA', 'INDHOTEL'
-            ]
-            
             all_items = list(self.tokens_map.items())
 
             while self.is_running:
                 try:
-                    # Sync in batches of 50
-                    for i in range(0, len(all_items), 50):
-                        if not self.is_running:
-                            break
-                        batch = all_items[i:i+50]
-                        futures = [self.executor.submit(self._sync_single_stock, it) for it in batch]
-                        concurrent.futures.wait(futures, timeout=20)
-                        time.sleep(0.5)
+                    # If Angel One WebSocket is connected and streaming active, skip heavy HTTP polling pass
+                    if self.is_connected and self.is_authenticated:
+                        time.sleep(15)
+                        continue
 
-                    time.sleep(10)
+                    # Fallback sync when WS is disconnected: sync in batches of 30
+                    for i in range(0, len(all_items), 30):
+                        if not self.is_running or (self.is_connected and self.is_authenticated):
+                            break
+                        batch = all_items[i:i+30]
+                        futures = [self.executor.submit(self._sync_single_stock, it) for it in batch]
+                        concurrent.futures.wait(futures, timeout=15)
+                        time.sleep(0.8)
+
+                    time.sleep(15)
                 except (RuntimeError, Exception) as e:
                     logger.debug(f"Sync loop iteration note: {e}")
                     if not self.is_running:
@@ -419,13 +413,14 @@ url="https://www.google.com/"
             self.is_connected = True
             token_list = list(self.tokens_map.keys())
             
-            token_chunks = [token_list[i:i+50] for i in range(0, min(len(token_list), 500), 50)]
+            # Subscribe ALL Shariah stocks (2300+) in batches of 250 tokens
+            token_chunks = [token_list[i:i+250] for i in range(0, len(token_list), 250)]
             for idx, chunk in enumerate(token_chunks):
                 token_payload = [{"exchangeType": 1, "tokens": chunk}]
                 try:
                     if self.sws:
-                        self.sws.subscribe(correlation_id=f"shariah_sub_{idx}", mode=3, token_list=token_payload)
-                        logger.info(f"Subscribed batch {idx+1}/{len(token_chunks)} ({len(chunk)} tokens)")
+                        self.sws.subscribe(correlation_id=f"shariah_sub_{idx}", mode=1, token_list=token_payload)
+                        logger.info(f"Subscribed Angel WS batch {idx+1}/{len(token_chunks)} ({len(chunk)} tokens)")
                 except Exception as ex:
                     logger.error(f"Error subscribing batch {idx}: {ex}")
 
@@ -462,23 +457,26 @@ url="https://www.google.com/"
             old_item = self.market_data.get(token, {})
             old_ltp = old_item.get("ltp", 0.0)
 
+            def _parse_price(val, fallback=0.0):
+                if val is None or val == "":
+                    return fallback
+                try:
+                    v = float(val)
+                    if v > 200:
+                        return v / 100.0
+                    return v
+                except:
+                    return fallback
+
             raw_ltp = data.get("last_traded_price", data.get("ltp", 0.0))
-            if raw_ltp > 100000 and "divisor" not in data:
-                ltp = raw_ltp / 100.0
-            else:
-                ltp = float(raw_ltp)
+            ltp = _parse_price(raw_ltp, old_ltp)
+            if ltp <= 0:
+                return
 
-            close = float(data.get("closed_price", data.get("close", old_item.get("close", ltp))))
-            if close > 100000: close = close / 100.0
-
-            open_p = float(data.get("open_price_of_the_day", data.get("open", old_item.get("open", ltp))))
-            if open_p > 100000: open_p = open_p / 100.0
-
-            high_p = float(data.get("high_price_of_the_day", data.get("high", max(old_item.get("high", ltp), ltp))))
-            if high_p > 100000: high_p = high_p / 100.0
-
-            low_p = float(data.get("low_price_of_the_day", data.get("low", min(old_item.get("low", ltp), ltp) if old_item.get("low", 0) > 0 else ltp)))
-            if low_p > 100000: low_p = low_p / 100.0
+            close = _parse_price(data.get("closed_price", data.get("close")), old_item.get("close", ltp))
+            open_p = _parse_price(data.get("open_price_of_the_day", data.get("open")), old_item.get("open", ltp))
+            high_p = _parse_price(data.get("high_price_of_the_day", data.get("high")), max(old_item.get("high", ltp), ltp))
+            low_p = _parse_price(data.get("low_price_of_the_day", data.get("low")), min(old_item.get("low", ltp), ltp) if old_item.get("low", 0) > 0 else ltp)
 
             vol = int(data.get("volume_traded_for_the_day", data.get("vol", old_item.get("volume", 0))))
 
