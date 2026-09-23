@@ -623,41 +623,39 @@
             </div>
         </div>
 
-        <!-- Reset Password via Mail OTP View -->
+        <!-- Reset Password (OTP shown on screen) -->
         <div id="adminResetPasswordView" style="display: none; text-align: left; margin-top: 10px;">
             <div style="font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 6px;">
-                <i class="fa-solid fa-envelope-open-text" style="color: var(--accent);"></i> Reset Admin Password
+                <i class="fa-solid fa-key" style="color: var(--accent);"></i> Reset Admin Password
             </div>
             <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 14px;">
-                Enter email address to receive 6-digit verification OTP code for resetting admin password.
+                Click <strong>Generate OTP</strong>. A one-time 6-digit code will appear on screen. Use it to set a new password.
             </p>
 
-            <div class="admin-field">
-                <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="resetAdminEmail" placeholder="Enter email address (e.g. admin@shariah.in)" value="admin@shariah.in">
+            <!-- Step 1: Generate OTP -->
+            <div id="resetStep1">
+                <button type="button" id="btnRequestOtp" class="btn-admin-login" onclick="requestAdminResetOtp()" style="margin-bottom: 8px;">
+                    <i class="fa-solid fa-shield-halved"></i> Generate Reset OTP
+                </button>
             </div>
 
-            <!-- OTP & New Password Step (Hidden initially) -->
+            <!-- OTP & New Password Step (shown after OTP generated) -->
             <div id="resetOtpStep" style="display: none;">
                 <div class="admin-field">
                     <i class="fa-solid fa-shield-halved"></i>
-                    <input type="text" id="resetOtpCode" placeholder="6-digit Mail OTP code" maxlength="6" style="letter-spacing: 3px; font-weight: 700;">
+                    <input type="text" id="resetOtpCode" placeholder="Paste 6-digit OTP code here" maxlength="6" style="letter-spacing: 3px; font-weight: 700; text-align:center;">
                 </div>
                 <div class="admin-field">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="resetNewPass" placeholder="Enter new password">
+                    <input type="password" id="resetNewPass" placeholder="Enter new password (min 6 chars)">
                 </div>
+
+                <button type="button" id="btnSubmitReset" class="btn-admin-login" onclick="submitAdminResetPassword()" style="margin-bottom: 8px; background: linear-gradient(135deg, #00e676, #00b248);">
+                    <i class="fa-solid fa-check-double"></i> Confirm & Reset Password
+                </button>
             </div>
 
             <div id="resetAlert" style="display:none; padding: 10px; border-radius: 8px; font-size: 0.76rem; margin-bottom: 12px; border: 1px solid transparent;"></div>
-
-            <button type="button" id="btnRequestOtp" class="btn-admin-login" onclick="requestAdminResetOtp()" style="margin-bottom: 8px;">
-                <i class="fa-solid fa-paper-plane"></i> Send Mail OTP Code
-            </button>
-
-            <button type="button" id="btnSubmitReset" class="btn-admin-login" onclick="submitAdminResetPassword()" style="display: none; margin-bottom: 8px; background: linear-gradient(135deg, #00e676, #00b248);">
-                <i class="fa-solid fa-check-double"></i> Confirm & Reset Password
-            </button>
 
             <button type="button" onclick="showLoginMainView()" style="width: 100%; background: none; border: none; color: var(--text-dim); font-family: inherit; font-size: 0.78rem; cursor: pointer; padding: 6px;">
                 <i class="fa-solid fa-arrow-left"></i> Back to Login
@@ -1548,26 +1546,18 @@
     }
 
     async function requestAdminResetOtp() {
-        const email = document.getElementById('resetAdminEmail').value.trim();
         const alertEl = document.getElementById('resetAlert');
         const btnReq = document.getElementById('btnRequestOtp');
-        if (!email) {
-            alertEl.style.display = 'block';
-            alertEl.style.background = 'rgba(255,61,113,0.15)';
-            alertEl.style.color = '#ff3d71';
-            alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
-            alertEl.innerHTML = '❌ Please enter your email address.';
-            return;
-        }
 
         btnReq.disabled = true;
         btnReq.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generating OTP...';
+        alertEl.style.display = 'none';
 
         try {
             const res = await fetch('/api/admin/request_reset_otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
+                body: JSON.stringify({})
             });
             const data = await res.json();
             if (data.success) {
@@ -1575,22 +1565,23 @@
                 alertEl.style.background = 'rgba(0,230,118,0.15)';
                 alertEl.style.color = '#00e676';
                 alertEl.style.borderColor = 'rgba(0,230,118,0.4)';
-                let msg = `✅ <strong>${data.message}</strong>`;
-                if (data.otp_code) {
-                    msg += `<br><span style="color:#fff; font-weight:700;">Verification Code: <code style="color:var(--accent); font-size:1.15rem; letter-spacing:2px;">${data.otp_code}</code></span>`;
-                    document.getElementById('resetOtpCode').value = data.otp_code;
-                }
-                alertEl.innerHTML = msg;
-
+                alertEl.innerHTML = `✅ <strong>OTP Generated!</strong><br>
+                    <span style="color:#fff">Your one-time reset code:</span><br>
+                    <code style="color:var(--accent); font-size:1.5rem; font-weight:900; letter-spacing:6px; display:block; margin:8px 0; text-align:center;">${data.otp_code}</code>
+                    <span style="font-size:0.7rem; color: var(--text-dim);">⏰ This code expires in 10 minutes. Paste it below and set your new password.</span>`;
+                // Auto-fill OTP code
+                document.getElementById('resetOtpCode').value = data.otp_code;
+                // Show OTP + new password step
                 document.getElementById('resetOtpStep').style.display = 'block';
-                document.getElementById('btnSubmitReset').style.display = 'block';
-                btnReq.style.display = 'none';
+                document.getElementById('resetStep1').style.display = 'none';
             } else {
                 alertEl.style.display = 'block';
                 alertEl.style.background = 'rgba(255,61,113,0.15)';
                 alertEl.style.color = '#ff3d71';
                 alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
-                alertEl.innerHTML = `❌ ${data.error || 'Failed to request OTP'}`;
+                alertEl.innerHTML = `❌ ${data.error || 'Failed to generate OTP. Try again.'}`;
+                btnReq.disabled = false;
+                btnReq.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Generate Reset OTP';
             }
         } catch(e) {
             alertEl.style.display = 'block';
@@ -1598,9 +1589,8 @@
             alertEl.style.color = '#ff3d71';
             alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
             alertEl.innerHTML = '❌ Server error. Please try again.';
-        } finally {
             btnReq.disabled = false;
-            btnReq.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Mail OTP Code';
+            btnReq.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Generate Reset OTP';
         }
     }
 

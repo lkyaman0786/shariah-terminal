@@ -1031,6 +1031,76 @@ async def admin_change_credentials(request: Request):
     return JSONResponse({"success": True})
 
 
+# ── In-memory OTP store for password reset (expires in 10 mins) ──
+_reset_otps: dict = {}   # { otp_code: expiry_timestamp }
+
+@app.post("/api/admin/request_reset_otp")
+async def admin_request_reset_otp(request: Request):
+    """Generate a one-time OTP for admin password reset (no email needed — OTP shown on screen)"""
+    import random
+    import time as _time
+    # Generate 6-digit OTP
+    otp = f"{random.randint(100000, 999999)}"
+    # Store with 10-minute expiry
+    _reset_otps[otp] = _time.time() + 600
+
+    # Also save to persistent store (survives restarts)
+    store_set("admin_reset_otp", json.dumps({"otp": otp, "exp": _reset_otps[otp]}))
+    append_log(f"Admin password reset OTP generated: {otp}")
+
+    return JSONResponse({
+        "success": True,
+        "message": "OTP generated successfully. Copy the code below to reset your password.",
+        "otp_code": otp   # Shown directly on the admin screen — no email needed
+    })
+
+
+@app.post("/api/admin/reset_password_otp")
+async def admin_reset_password_otp(request: Request):
+    """Verify OTP and reset the admin password"""
+    import time as _time
+    body = await request.json()
+    otp_code = str(body.get("otp_code", "")).strip()
+    new_password = body.get("new_password", "").strip()
+
+    if not otp_code or not new_password:
+        return JSONResponse({"success": False, "error": "OTP code and new password are required."})
+
+    if len(new_password) < 6:
+        return JSONResponse({"success": False, "error": "New password must be at least 6 characters."})
+
+    # Check in-memory OTPs first
+    valid = False
+    if otp_code in _reset_otps:
+        if _time.time() < _reset_otps[otp_code]:
+            valid = True
+        del _reset_otps[otp_code]
+
+    # Also check persistent store (for cross-restart scenarios)
+    if not valid:
+        try:
+            stored = store_get("admin_reset_otp")
+            if stored:
+                stored_data = json.loads(stored)
+                if str(stored_data.get("otp")) == otp_code and _time.time() < stored_data.get("exp", 0):
+                    valid = True
+                store_set("admin_reset_otp", "")  # Invalidate after use
+        except Exception:
+            pass
+
+    if not valid:
+        return JSONResponse({"success": False, "error": "Invalid or expired OTP. Please request a new one."})
+
+    # OTP valid — update the admin password
+    settings = load_settings()
+    settings["admin_password"] = _hash(new_password)
+    save_settings(settings)
+    append_log("Admin password reset via OTP successfully.")
+    return JSONResponse({"success": True, "message": "Password reset successful! You can now log in with your new password."})
+
+
+
+
 @app.get("/api/admin/credentials")
 async def admin_get_credentials(request: Request):
     """Retrieve saved Angel One credentials for auto-filling in Admin panel — admin only"""

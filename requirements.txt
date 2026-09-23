@@ -9,3 +9,4 @@ aiohttp
 beautifulsoup4
 lxml
 psycopg2-binary
+sqlalchemy>=2.0.0
