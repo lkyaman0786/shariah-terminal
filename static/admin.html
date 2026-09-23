@@ -1553,9 +1553,9 @@
         const btnReq = document.getElementById('btnRequestOtp');
         if (!email) {
             alertEl.style.display = 'block';
-            alertEl.style.background = 'rgba(255,61,113,0.1)';
+            alertEl.style.background = 'rgba(255,61,113,0.15)';
             alertEl.style.color = '#ff3d71';
-            alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
+            alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
             alertEl.innerHTML = '❌ Please enter your email address.';
             return;
         }
@@ -1572,12 +1572,13 @@
             const data = await res.json();
             if (data.success) {
                 alertEl.style.display = 'block';
-                alertEl.style.background = 'rgba(0,230,118,0.12)';
+                alertEl.style.background = 'rgba(0,230,118,0.15)';
                 alertEl.style.color = '#00e676';
-                alertEl.style.borderColor = 'rgba(0,230,118,0.3)';
+                alertEl.style.borderColor = 'rgba(0,230,118,0.4)';
                 let msg = `✅ <strong>${data.message}</strong>`;
                 if (data.otp_code) {
-                    msg += `<br><span style="color:#fff; font-weight:700;">Verification OTP Code: <code style="color:var(--accent); font-size:1.1rem; letter-spacing:2px;">${data.otp_code}</code></span>`;
+                    msg += `<br><span style="color:#fff; font-weight:700;">Verification Code: <code style="color:var(--accent); font-size:1.15rem; letter-spacing:2px;">${data.otp_code}</code></span>`;
+                    document.getElementById('resetOtpCode').value = data.otp_code;
                 }
                 alertEl.innerHTML = msg;
 
@@ -1586,20 +1587,20 @@
                 btnReq.style.display = 'none';
             } else {
                 alertEl.style.display = 'block';
-                alertEl.style.background = 'rgba(255,61,113,0.1)';
+                alertEl.style.background = 'rgba(255,61,113,0.15)';
                 alertEl.style.color = '#ff3d71';
-                alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
+                alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
                 alertEl.innerHTML = `❌ ${data.error || 'Failed to request OTP'}`;
             }
         } catch(e) {
             alertEl.style.display = 'block';
-            alertEl.style.background = 'rgba(255,61,113,0.1)';
+            alertEl.style.background = 'rgba(255,61,113,0.15)';
             alertEl.style.color = '#ff3d71';
-            alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
-            alertEl.innerHTML = '❌ Error communicating with server. Please try again.';
+            alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
+            alertEl.innerHTML = '❌ Server error. Please try again.';
         } finally {
             btnReq.disabled = false;
-            btnReq.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Resend Mail OTP Code';
+            btnReq.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Mail OTP Code';
         }
     }
 
@@ -1611,10 +1612,10 @@
 
         if (!otp_code || !new_password) {
             alertEl.style.display = 'block';
-            alertEl.style.background = 'rgba(255,61,113,0.1)';
+            alertEl.style.background = 'rgba(255,61,113,0.15)';
             alertEl.style.color = '#ff3d71';
-            alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
-            alertEl.innerHTML = '❌ Please enter 6-digit Mail OTP code and your new password.';
+            alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
+            alertEl.innerHTML = '❌ Please enter OTP code and your new password.';
             return;
         }
 
@@ -1638,27 +1639,20 @@
                 setTimeout(() => {
                     document.getElementById('adminPass').value = new_password;
                     showLoginMainView();
-                    const errEl = document.getElementById('adminErr');
-                    if (errEl) {
-                        errEl.style.display = 'block';
-                        errEl.style.background = 'rgba(0,230,118,0.12)';
-                        errEl.style.color = '#00e676';
-                        errEl.style.borderColor = 'rgba(0,230,118,0.3)';
-                        errEl.innerHTML = '✅ Password reset successfully! Click "Enter Admin Panel" to log in with your new password.';
-                    }
-                }, 1200);
+                    doAdminLogin();
+                }, 1000);
             } else {
                 alertEl.style.display = 'block';
-                alertEl.style.background = 'rgba(255,61,113,0.1)';
+                alertEl.style.background = 'rgba(255,61,113,0.15)';
                 alertEl.style.color = '#ff3d71';
-                alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
+                alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
                 alertEl.innerHTML = `❌ ${data.error || 'Password reset failed'}`;
             }
         } catch(e) {
             alertEl.style.display = 'block';
-            alertEl.style.background = 'rgba(255,61,113,0.1)';
+            alertEl.style.background = 'rgba(255,61,113,0.15)';
             alertEl.style.color = '#ff3d71';
-            alertEl.style.borderColor = 'rgba(255,61,113,0.3)';
+            alertEl.style.borderColor = 'rgba(255,61,113,0.4)';
             alertEl.innerHTML = '❌ Error resetting password. Try again.';
         } finally {
             btnSub.disabled = false;
