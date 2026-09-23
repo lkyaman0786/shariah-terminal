@@ -2505,17 +2505,19 @@
     // ===================== CONFIG =====================
     async function loadConfig() {
         try {
-            const res = await fetch('/api/status');
-            const s = await res.json();
-            // Only show masked/partial credential hints
-            if (s.api_key) document.getElementById('cfgApiKey').placeholder = s.api_key + ' (saved)';
-            if (s.username) document.getElementById('cfgClientId').placeholder = s.username + ' (saved)';
-        } catch(e) {}
-    async function loadConfig() {
-        try {
-            const res = await fetch('/api/admin/credentials', { headers: adminHeaders() });
-            if (res.ok) {
-                const creds = await res.json();
+            const [statusRes, credsRes] = await Promise.all([
+                fetch('/api/status'),
+                fetch('/api/admin/credentials', { headers: adminHeaders() })
+            ]);
+
+            if (statusRes.ok) {
+                const s = await statusRes.json();
+                if (s.api_key) document.getElementById('cfgApiKey').placeholder = s.api_key + ' (saved)';
+                if (s.username) document.getElementById('cfgClientId').placeholder = s.username + ' (saved)';
+            }
+
+            if (credsRes.ok) {
+                const creds = await credsRes.json();
                 if (creds.api_key) document.getElementById('cfgApiKey').value = creds.api_key;
                 if (creds.username) document.getElementById('cfgClientId').value = creds.username;
                 if (creds.pwd) document.getElementById('cfgPin').value = creds.pwd;
@@ -2535,7 +2537,7 @@
                 }
             }
         } catch(e) {
-            console.error('Error loading credentials in admin config:', e);
+            console.error('Error loading config:', e);
         }
     }
 
