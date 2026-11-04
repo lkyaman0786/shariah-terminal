@@ -578,12 +578,16 @@ async def terminal_login(req: TerminalLoginRequest):
     append_log(f"Terminal login: {user['name']} ({user['email']})")
     sync_to_google_sheet({
         "action": "login",
+        "machine_id": user.get("machine_id") or user.get("id") or "",
+        "client_name": user.get("name", ""),
         "name": user.get("name", ""),
         "email": user.get("email", ""),
         "phone": user.get("phone", ""),
+        "mobile": user.get("phone", ""),
         "plan_type": (user.get("plan_type") or user.get("plan") or "free").upper(),
-        "expiry_date": user.get("expires_at", ""),
-        "status": user.get("status", "active").capitalize()
+        "expiry_date": user.get("expires_at") or "",
+        "status": user.get("status", "active").capitalize(),
+        "last_active": time.strftime("%Y-%m-%d %H:%M:%S")
     })
 
     days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False))
@@ -635,11 +639,16 @@ async def terminal_register(req: TerminalRegisterRequest):
     save_users(users)
     sync_to_google_sheet({
         "action": "register",
+        "machine_id": new_user.get("id", ""),
+        "client_name": req.name,
         "name": req.name,
         "email": req.email,
         "phone": req.phone or "",
-        "plan_type": "Free Trial",
-        "status": "Pending"
+        "mobile": req.phone or "",
+        "plan_type": "FREE TRIAL",
+        "expiry_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
+        "status": "Pending",
+        "last_active": time.strftime("%Y-%m-%d %H:%M:%S")
     })
     append_log(f"New user registered: {req.name} ({req.email}) — pending admin approval")
     return JSONResponse({
@@ -856,12 +865,16 @@ async def admin_sync_all_to_sheet(request: Request):
     for u in users:
         sync_to_google_sheet({
             "action": "register",
+            "machine_id": u.get("machine_id") or u.get("id") or "",
+            "client_name": u.get("name", ""),
             "name": u.get("name", ""),
             "email": u.get("email", ""),
             "phone": u.get("phone", ""),
+            "mobile": u.get("phone", ""),
             "plan_type": (u.get("plan_type") or u.get("plan") or "free").upper(),
-            "expiry_date": u.get("expires_at", ""),
-            "status": u.get("status", "active").capitalize()
+            "expiry_date": u.get("expires_at") or "",
+            "status": u.get("status", "active").capitalize(),
+            "last_active": u.get("last_active") or time.strftime("%Y-%m-%d %H:%M:%S")
         })
         count += 1
     return JSONResponse({"success": True, "message": f"Synced {count} users to Google Sheet"})
