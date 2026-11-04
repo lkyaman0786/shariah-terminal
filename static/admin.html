@@ -733,6 +733,7 @@
             <span style="color:var(--text-dim); margin-left: 8px;" id="stockCountDisplay">—</span>
         </div>
         <div class="topbar-actions">
+            <button class="topbar-btn" onclick="syncAllToGoogleSheet()" style="background:rgba(0,230,118,0.15); border-color:var(--green); color:var(--green);"><i class="fa-solid fa-file-excel"></i> Sync to Google Sheet</button>
             <button class="topbar-btn" onclick="refreshDashboard()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
             <button class="topbar-btn danger" onclick="if(confirm('Restart sync?')) fetch('/api/admin/restart_sync',{method:'POST',headers:{...adminHeaders()}}).then(()=>alert('Sync restarted'))"><i class="fa-solid fa-rotate"></i> Restart Sync</button>
             <button class="topbar-btn danger" onclick="doAdminLogout()" style="background:rgba(255,61,113,0.15); border-color:var(--red); color:var(--red);"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -2703,6 +2704,26 @@
             alert('✅ Stock sync triggered!');
         } catch(e) { alert('Error triggering sync'); }
         btn.disabled = false;
+    }
+
+    async function syncAllToGoogleSheet() {
+        const btn = document.querySelector('[onclick="syncAllToGoogleSheet()"]');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...'; }
+        try {
+            const res = await fetch('/api/admin/sync_to_sheet', {
+                method: 'POST',
+                headers: adminHeaders()
+            });
+            const d = await res.json();
+            if (d.success) {
+                alert('✅ ' + d.message);
+            } else {
+                alert('❌ Sync failed: ' + (d.error || 'Unknown error'));
+            }
+        } catch(e) {
+            alert('❌ Network error: ' + e.message);
+        }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Sync to Google Sheet'; }
     }
 
     // ===================== INIT =====================

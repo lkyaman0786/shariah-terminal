@@ -6,6 +6,26 @@ import os
 import time
 import uuid
 import uvicorn
+import threading
+import requests
+
+GOOGLE_SHEET_WEB_APP_URL = os.environ.get(
+    "GOOGLE_SHEET_WEB_APP_URL",
+    "https://script.google.com/macros/s/AKfycbzou9z-ZIVEuE38tZUlgbaYniDlTMu60QoqeXw837Q8aUs_kWb3guixCrTcNGm1H1Vj/exec"
+)
+
+def sync_to_google_sheet(payload: dict):
+    """Async background fire-and-forget sync to Google Sheets license/user webhook."""
+    def _worker():
+        try:
+            url = os.environ.get("GOOGLE_SHEET_WEB_APP_URL", GOOGLE_SHEET_WEB_APP_URL)
+            if not url:
+                return
+            res = requests.post(url, json=payload, timeout=10)
+            print(f"[GoogleSheetSync] Posted {payload.get('action')} - status {res.status_code}")
+        except Exception as e:
+            print(f"[GoogleSheetSync] Error syncing to sheet: {e}")
+    threading.Thread(target=_worker, daemon=True).start()
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
@@ -556,6 +576,15 @@ async def terminal_login(req: TerminalLoginRequest):
     active_terminal_users[user["id"]] = time.time()
     save_users(users)
     append_log(f"Terminal login: {user['name']} ({user['email']})")
+    sync_to_google_sheet({
+        "action": "login",
+        "name": user.get("name", ""),
+        "email": user.get("email", ""),
+        "phone": user.get("phone", ""),
+        "plan_type": (user.get("plan_type") or user.get("plan") or "free").upper(),
+        "expiry_date": user.get("expires_at", ""),
+        "status": user.get("status", "active").capitalize()
+    })
 
     days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False))
 
@@ -604,6 +633,14 @@ async def terminal_register(req: TerminalRegisterRequest):
     }
     users.append(new_user)
     save_users(users)
+    sync_to_google_sheet({
+        "action": "register",
+        "name": req.name,
+        "email": req.email,
+        "phone": req.phone or "",
+        "plan_type": "Free Trial",
+        "status": "Pending"
+    })
     append_log(f"New user registered: {req.name} ({req.email}) — pending admin approval")
     return JSONResponse({
         "success": True,
@@ -810,6 +847,25 @@ async def api_admin_reset_password_otp(req: AdminResetPasswordOtpModel):
 # ─────────────────────────────────────────────────────────────────────
 # ADMIN APIs — Users
 # ─────────────────────────────────────────────────────────────────────
+@app.post("/api/admin/sync_to_sheet")
+async def admin_sync_all_to_sheet(request: Request):
+    if not check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    users = load_users()
+    count = 0
+    for u in users:
+        sync_to_google_sheet({
+            "action": "register",
+            "name": u.get("name", ""),
+            "email": u.get("email", ""),
+            "phone": u.get("phone", ""),
+            "plan_type": (u.get("plan_type") or u.get("plan") or "free").upper(),
+            "expiry_date": u.get("expires_at", ""),
+            "status": u.get("status", "active").capitalize()
+        })
+        count += 1
+    return JSONResponse({"success": True, "message": f"Synced {count} users to Google Sheet"})
+
 @app.get("/api/admin/users")
 async def admin_get_users(request: Request):
     if not check_admin(request):
@@ -920,8 +976,15 @@ async def admin_update_status(user_id: str, request: Request, req: UpdateStatusR
                     u["expires_at"] = add_days_to_now(7 if is_trial else 30)
                 u["approved_at"] = get_now_iso()
             break
+    target_user = next((u for u in users if u.get("id") == user_id), None)
     save_users(users)
     append_log(f"Admin updated user {user_id} status to {req.status}")
+    if target_user:
+        sync_to_google_sheet({
+            "action": "update_status",
+            "email": target_user.get("email"),
+            "status": req.status.capitalize()
+        })
     return JSONResponse({"success": True})
 
 @app.put("/api/admin/users/{user_id}/password")
