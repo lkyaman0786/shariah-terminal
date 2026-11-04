@@ -11,8 +11,18 @@ import requests
 
 GOOGLE_SHEET_WEB_APP_URL = os.environ.get(
     "GOOGLE_SHEET_WEB_APP_URL",
-    "https://script.google.com/macros/s/AKfycbzou9z-ZIVEuE38tZUlgbaYniDlTMu60QoqeXw837Q8aUs_kWb3guixCrTcNGm1H1Vj/exec"
+    "https://script.google.com/macros/s/AKfycbw_BVimMO44wjDGG79ghAw_fnx8qLxQO3NT6aNS5TUIGAPdvkz1cpbvimIQJwKuVr0/exec"
 )
+
+
+def map_sheet_status(st: str) -> str:
+    """Normalize status to match Google Sheet dropdown values: Pending, Active, Blocked."""
+    s = (st or "pending").lower()
+    if "active" in s:
+        return "Active"
+    elif "block" in s or "expir" in s:
+        return "Blocked"
+    return "Pending"
 
 def sync_to_google_sheet(payload: dict):
     """Async background fire-and-forget sync to Google Sheets license/user webhook."""
@@ -586,7 +596,7 @@ async def terminal_login(req: TerminalLoginRequest):
         "mobile": user.get("phone", ""),
         "plan_type": (user.get("plan_type") or user.get("plan") or "free").upper(),
         "expiry_date": user.get("expires_at") or "",
-        "status": user.get("status", "active").capitalize(),
+        "status": map_sheet_status(user.get("status", "active")),
         "last_active": time.strftime("%Y-%m-%d %H:%M:%S")
     })
 
@@ -873,7 +883,7 @@ async def admin_sync_all_to_sheet(request: Request):
             "mobile": u.get("phone", ""),
             "plan_type": (u.get("plan_type") or u.get("plan") or "free").upper(),
             "expiry_date": u.get("expires_at") or "",
-            "status": u.get("status", "active").capitalize(),
+            "status": map_sheet_status(u.get("status", "active")),
             "last_active": u.get("last_active") or time.strftime("%Y-%m-%d %H:%M:%S")
         })
         count += 1
@@ -996,7 +1006,7 @@ async def admin_update_status(user_id: str, request: Request, req: UpdateStatusR
         sync_to_google_sheet({
             "action": "update_status",
             "email": target_user.get("email"),
-            "status": req.status.capitalize()
+            "status": map_sheet_status(req.status)
         })
     return JSONResponse({"success": True})
 

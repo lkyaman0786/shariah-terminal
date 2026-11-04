@@ -16,7 +16,7 @@ def verify_license():
         computer_name = platform.node()
         
         # Yahan apna Google Apps Script ka Web App URL paste karein
-        web_app_url = "https://script.google.com/macros/s/AKfycbzou9z-ZIVEuE38tZUlgbaYniDlTMu60QoqeXw837Q8aUs_kWb3guixCrTcNGm1H1Vj/exec"
+        web_app_url = "https://script.google.com/macros/s/AKfycbw_BVimMO44wjDGG79ghAw_fnx8qLxQO3NT6aNS5TUIGAPdvkz1cpbvimIQJwKuVr0/exec"
         
         payload = {
             "action": "verify",
