@@ -26,16 +26,16 @@ def verify_license():
         
         response = requests.post(web_app_url, json=payload, timeout=8)
         result = response.json()
-        current_status = str(result.get("status", "Active")).strip().capitalize()
+        current_status = str(result.get("status", "Active")).strip().lower()
         
-        if current_status == "Pending":
+        if current_status == "pending":
             root = tk.Tk()
             root.withdraw()
             messagebox.showwarning("Approval Pending", "Aapki license request admin ke paas pending hai. Approval milne par hi software chalega.")
             root.destroy()
             os._exit(0)
             
-        elif current_status == "Blocked":
+        elif current_status in ["blocked", "expired"]:
             root = tk.Tk()
             root.withdraw()
             messagebox.showerror("Access Denied", "Aapka license blocked ya expire ho chuka hai.")

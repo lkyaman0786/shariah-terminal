@@ -309,6 +309,36 @@
         }
         function hideAlert() { document.getElementById('alertBox').className = 'alert-box'; }
 
+        // Persistent Client / Machine ID
+        function getMachineId() {
+            let mId = localStorage.getItem('terminal_machine_id');
+            if (!mId) {
+                mId = 'WEB-' + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : ('client-' + Date.now() + '-' + Math.random().toString(36).substring(2, 10)));
+                localStorage.setItem('terminal_machine_id', mId);
+            }
+            return mId;
+        }
+
+        // Auto-check active session on page load
+        (async function checkExistingSession() {
+            const token = localStorage.getItem('terminal_token');
+            const userRaw = localStorage.getItem('terminal_user');
+            if (token && userRaw) {
+                try {
+                    const u = JSON.parse(userRaw);
+                    const res = await fetch('/api/terminal/verify_session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: u.id, email: u.email, machine_id: getMachineId(), token: token })
+                    });
+                    const d = await res.json();
+                    if (d.valid) {
+                        window.location.replace('/');
+                    }
+                } catch(e) {}
+            }
+        })();
+
         async function doLogin() {
             const identifier = document.getElementById('loginId').value.trim();
             const password = document.getElementById('loginPwd').value;
@@ -320,7 +350,7 @@
             try {
                 const res = await fetch('/api/terminal/login', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier, password })
+                    body: JSON.stringify({ identifier, password, machine_id: getMachineId() })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -329,7 +359,7 @@
                     localStorage.setItem('terminal_token', data.token);
                     sessionStorage.setItem('terminal_user', JSON.stringify(data.user));
                     sessionStorage.setItem('terminal_token', data.token);
-                    setTimeout(() => window.location.href = '/', 700);
+                    setTimeout(() => window.location.href = '/', 600);
                 } else {
                     showAlert(data.error || 'Login failed. Check credentials.');
                 }
@@ -346,19 +376,27 @@
             if (!name || !email || !password) { showAlert('Naam, email aur password required hai.'); return; }
             const btn = document.querySelector('#registerSection .btn-submit');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating account...';
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Submitting...';
             hideAlert();
             try {
                 const res = await fetch('/api/terminal/register', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, phone, password })
+                    body: JSON.stringify({ name, email, phone, password, machine_id: getMachineId() })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showAlert('✅ ' + (data.message || 'Account created! Admin permission / approval ke baad aap access kar sakenge.'), 'success');
+                    showAlert('✅ ' + (data.message || 'Account created! Admin permission / approval ke baad terminal access milega.'), 'success');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-check"></i> Submitted';
                     setTimeout(() => switchTab('login'), 2000);
+                } else if (data.error_code === 'USER_ALREADY_EXISTS') {
+                    showAlert(data.error || 'Account already exists. Please log in.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Request Free Trial Access';
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('loginId').value = email || phone;
+                    }, 1500);
                 } else {
                     showAlert(data.error || 'Registration failed.');
                     btn.disabled = false;

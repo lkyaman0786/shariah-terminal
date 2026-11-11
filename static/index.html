@@ -19,15 +19,18 @@
             }
             const userRaw = localStorage.getItem('terminal_user') || sessionStorage.getItem('terminal_user');
             let userId = null;
+            let userEmail = null;
             try {
                 const u = JSON.parse(userRaw);
-                userId = u.id || u.email;
+                userId = u.id;
+                userEmail = u.email;
             } catch(e) {}
+            const machineId = localStorage.getItem('terminal_machine_id') || '';
 
             fetch('/api/terminal/verify_session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId })
+                body: JSON.stringify({ user_id: userId, email: userEmail, machine_id: machineId, token: token })
             })
             .then(r => r.json())
             .then(res => {
@@ -36,7 +39,7 @@
                     localStorage.removeItem('terminal_user');
                     sessionStorage.removeItem('terminal_token');
                     sessionStorage.removeItem('terminal_user');
-                    if (res && res.reason === 'expired') {
+                    if (res && (res.reason === 'expired' || res.error_code === 'EXPIRED')) {
                         alert(res.message || 'Aapka 7-day free trial / plan expire ho chuka hai. Kripya naya plan activate karein.');
                         window.location.replace('/pricing?expired=true');
                     } else {
@@ -50,7 +53,10 @@
                     }
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                // Network blip / offline: keep user logged in with local storage
+                console.warn('verify_session network error; keeping cached credentials.');
+            });
         })();
     </script>
 </head>

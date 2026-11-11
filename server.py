@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import re
 import asyncio
 import hashlib
 import json
@@ -176,30 +177,72 @@ def get_now_iso() -> str:
 def add_days_to_now(days: int) -> str:
     return (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
 
-def calculate_days_left(expires_at: Optional[str], is_lifetime: bool = False) -> int:
+def parse_expiry_date(exp: Optional[str]) -> Optional[datetime]:
+    if not exp or not str(exp).strip():
+        return None
+    s = str(exp).strip()
+    formats = [
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%d/%m/%Y",
+        "%m/%d/%Y",
+        "%d-%m-%Y",
+        "%m-%d-%Y"
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(s[:19] if ("T" in s or " " in s) and ":" in s else s, fmt)
+        except Exception:
+            continue
+    try:
+        return datetime.fromisoformat(s)
+    except Exception:
+        return None
+
+def calculate_days_left(expires_at: Optional[str], is_lifetime: bool = False, status: str = "active") -> int:
     if is_lifetime:
         return 9999
-    if not expires_at:
-        return 0
-    try:
-        exp_dt = datetime.strptime(expires_at[:19], "%Y-%m-%dT%H:%M:%S")
-        diff = (exp_dt - datetime.now()).total_seconds()
-        days = int(diff // 86400)
-        return max(0, days + (1 if diff > 0 else 0))
-    except:
-        return 0
+    exp_dt = parse_expiry_date(expires_at)
+    if not exp_dt:
+        return 30 if str(status).strip().lower() == "active" else 0
+    diff = (exp_dt - datetime.now()).total_seconds()
+    days = int(diff // 86400)
+    return max(0, days + (1 if diff > 0 else 0))
 
 def is_user_expired(user: dict) -> bool:
     if user.get("is_lifetime"):
         return False
-    exp = user.get("expires_at")
-    if not exp:
-        return False
+    st = str(user.get("status", "")).strip().lower()
+    exp_dt = parse_expiry_date(user.get("expires_at"))
+    if not exp_dt:
+        return False if st == "active" else (st == "expired")
+    return datetime.now() > exp_dt
+
+def query_google_sheet_user(identifier: str, machine_id: Optional[str] = None) -> Optional[dict]:
+    """Live query Google Sheets Web App for user license & status."""
     try:
-        exp_dt = datetime.strptime(exp[:19], "%Y-%m-%dT%H:%M:%S")
-        return datetime.now() > exp_dt
-    except:
-        return False
+        url = os.environ.get("GOOGLE_SHEET_WEB_APP_URL", GOOGLE_SHEET_WEB_APP_URL)
+        if not url:
+            return None
+        clean_id = (identifier or "").strip().lower()
+        clean_mobile = re.sub(r'[^0-9]', '', identifier or "")
+        payload = {
+            "action": "verify",
+            "email": clean_id if "@" in clean_id else "",
+            "mobile": clean_mobile if ("@" not in clean_id and len(clean_mobile) >= 7) else (clean_id if "@" not in clean_id else ""),
+            "machine_id": machine_id or ""
+        }
+        res = requests.post(url, json=payload, timeout=8)
+        if res.status_code == 200:
+            data = res.json()
+            st_val = str(data.get("status", "")).strip().lower()
+            if data.get("success") and (data.get("found") or st_val in ["active", "pending", "blocked", "expired"]):
+                data["found"] = True
+                return data
+    except Exception as e:
+        print(f"[GoogleSheetQuery] Error querying user: {e}")
+    return None
 
 def load_users() -> List[dict]:
     # 1. Try DB store first (Postgres or SQLite)
@@ -403,12 +446,14 @@ class LoginRequest(BaseModel):
 class TerminalLoginRequest(BaseModel):
     identifier: str   # email or phone
     password: str
+    machine_id: Optional[str] = None
 
 class TerminalRegisterRequest(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
     password: str
+    machine_id: Optional[str] = None
 
 class CreateUserRequest(BaseModel):
     name: str
@@ -557,38 +602,112 @@ async def terminal_login(req: TerminalLoginRequest):
     users = load_users()
     settings = load_settings()
 
-    # Match by email or phone
+    clean_id = (req.identifier or "").strip().lower()
+    clean_digits = re.sub(r'[^0-9]', '', req.identifier or "")
+
+    # 1. Match local user by Email or Mobile first
     user = None
     for u in users:
-        if u.get("email") == req.identifier or u.get("phone") == req.identifier:
+        u_email = (u.get("email") or "").strip().lower()
+        u_phone_digits = re.sub(r'[^0-9]', '', u.get("phone") or "")
+        if clean_id and u_email == clean_id:
+            user = u
+            break
+        if clean_digits and len(clean_digits) >= 7 and u_phone_digits == clean_digits:
             user = u
             break
 
+    # 2. If not found locally, query Google Sheet Web App live!
     if not user:
-        return JSONResponse({"success": False, "error": "No account found. Check email or phone."})
+        sheet_res = query_google_sheet_user(req.identifier, req.machine_id)
+        if sheet_res and sheet_res.get("found"):
+            sheet_user = sheet_res.get("user") or sheet_res
+            sheet_status = str(sheet_user.get("status", "Active")).strip()
+            user = {
+                "id": sheet_user.get("machine_id") if sheet_user.get("machine_id") and not str(sheet_user.get("machine_id")).startswith("WEB-") else str(uuid.uuid4()),
+                "machine_id": req.machine_id or sheet_user.get("machine_id", ""),
+                "name": sheet_user.get("client_name") or sheet_user.get("name") or req.identifier,
+                "email": sheet_user.get("email") or (clean_id if "@" in clean_id else ""),
+                "phone": sheet_user.get("mobile") or (clean_digits if "@" not in clean_id else ""),
+                "password": _hash(req.password),
+                "plan": "trial" if "trial" in str(sheet_user.get("plan_type", "")).lower() else "pro",
+                "plan_type": "free" if "trial" in str(sheet_user.get("plan_type", "")).lower() else "paid",
+                "status": sheet_status.lower(),
+                "is_lifetime": False,
+                "expires_at": sheet_user.get("expiry_date"),
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+            }
+            users.append(user)
+            save_users(users)
 
-    if _hash(req.password) != user.get("password", ""):
-        return JSONResponse({"success": False, "error": "Wrong password. Try again."})
+    if not user:
+        return JSONResponse({
+            "success": False,
+            "error_code": "USER_NOT_FOUND",
+            "error": "No account found with this email or phone. Check credentials or register."
+        })
 
-    if user.get("status") == "pending":
-        return JSONResponse({"success": False, "error": "Your account is pending admin approval. Please wait."})
+    # 3. Check password (if user was imported without password, set it now)
+    stored_pw = user.get("password")
+    if stored_pw and _hash(req.password) != stored_pw:
+        return JSONResponse({
+            "success": False,
+            "error_code": "WRONG_PASSWORD",
+            "error": "Wrong password. Try again."
+        })
+    elif not stored_pw:
+        user["password"] = _hash(req.password)
+        save_users(users)
 
-    if user.get("status") == "blocked":
-        return JSONResponse({"success": False, "error": "Your account has been blocked. Contact admin."})
+    # 4. Check & Re-verify Status from Google Sheet if local status is not active
+    st = str(user.get("status", "")).strip().lower()
+    if st != "active":
+        sheet_res = query_google_sheet_user(req.identifier, req.machine_id)
+        if sheet_res and sheet_res.get("found"):
+            sheet_st = str(sheet_res.get("status", "")).strip().lower()
+            if sheet_st == "active":
+                user["status"] = "active"
+                user["expires_at"] = sheet_res.get("expiry_date") or user.get("expires_at")
+                save_users(users)
+                st = "active"
 
-    if is_user_expired(user) or user.get("status") == "expired":
+    if st == "pending":
+        return JSONResponse({
+            "success": False,
+            "error_code": "ACCOUNT_PENDING",
+            "error": "Your account is pending admin approval. Approval milne par terminal access milega."
+        })
+
+    if st == "blocked":
+        return JSONResponse({
+            "success": False,
+            "error_code": "ACCOUNT_BLOCKED",
+            "error": "Your account has been blocked. Contact admin."
+        })
+
+    if is_user_expired(user) or st == "expired":
         user["status"] = "expired"
         save_users(users)
-        return JSONResponse({"success": False, "error": "Aapka 7-day free trial ya plan expire ho chuka hai. Kripya naya plan activate karein."})
+        return JSONResponse({
+            "success": False,
+            "error_code": "EXPIRED",
+            "error": "Aapka 7-day free trial ya plan expire ho chuka hai. Kripya naya plan activate karein."
+        })
+
+    # Update machine_id if new
+    if req.machine_id:
+        user["machine_id"] = req.machine_id
 
     token = str(uuid.uuid4())
     user["last_active"] = get_now_iso()
     active_terminal_users[user["id"]] = time.time()
     save_users(users)
     append_log(f"Terminal login: {user['name']} ({user['email']})")
+
+    # Safe background audit sync to Google Sheet
     sync_to_google_sheet({
         "action": "login",
-        "machine_id": user.get("machine_id") or user.get("id") or "",
+        "machine_id": req.machine_id or user.get("machine_id") or user.get("id") or "",
         "client_name": user.get("name", ""),
         "name": user.get("name", ""),
         "email": user.get("email", ""),
@@ -596,11 +715,11 @@ async def terminal_login(req: TerminalLoginRequest):
         "mobile": user.get("phone", ""),
         "plan_type": (user.get("plan_type") or user.get("plan") or "free").upper(),
         "expiry_date": user.get("expires_at") or "",
-        "status": map_sheet_status(user.get("status", "active")),
+        "status": "Active",
         "last_active": time.strftime("%Y-%m-%d %H:%M:%S")
     })
 
-    days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False))
+    days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False), user.get("status", "active"))
 
     return JSONResponse({
         "success": True,
@@ -609,12 +728,13 @@ async def terminal_login(req: TerminalLoginRequest):
             "id": user["id"],
             "name": user["name"],
             "email": user["email"],
+            "phone": user.get("phone", ""),
             "plan": user.get("plan", "pro"),
             "plan_type": user.get("plan_type", "free" if user.get("plan") == "trial" else "paid"),
             "is_lifetime": user.get("is_lifetime", False),
             "expires_at": user.get("expires_at"),
             "days_left": days_left,
-            "status": user.get("status", "active")
+            "status": "active"
         }
     })
 
@@ -624,52 +744,107 @@ async def terminal_register(req: TerminalRegisterRequest):
     settings = load_settings()
 
     if not settings.get("allow_register", True):
-        return JSONResponse({"success": False, "error": "Self-registration is currently disabled. Contact admin."})
+        return JSONResponse({
+            "success": False,
+            "error_code": "REGISTRATION_DISABLED",
+            "error": "Self-registration is currently disabled. Contact admin."
+        })
 
-    # Check duplicate
+    clean_email = (req.email or "").strip().lower()
+    clean_phone = (req.phone or "").strip()
+    clean_digits = re.sub(r'[^0-9]', '', clean_phone)
+
+    # 1. Check duplicate locally
     for u in users:
-        if u.get("email") == req.email:
-            return JSONResponse({"success": False, "error": "An account with this email already exists."})
+        u_email = (u.get("email") or "").strip().lower()
+        u_phone_digits = re.sub(r'[^0-9]', '', u.get("phone") or "")
+        if clean_email and u_email == clean_email:
+            return JSONResponse({
+                "success": False,
+                "error_code": "USER_ALREADY_EXISTS",
+                "error": "An account with this email already exists. Please log in."
+            })
+        if clean_digits and len(clean_digits) >= 7 and u_phone_digits == clean_digits:
+            return JSONResponse({
+                "success": False,
+                "error_code": "USER_ALREADY_EXISTS",
+                "error": "An account with this phone number already exists. Please log in."
+            })
 
-    # All registrations are set to pending — require admin approval before access
+    # 2. Check duplicate in Google Sheet live (NEVER overwrite active users!)
+    sheet_res = query_google_sheet_user(clean_email, req.machine_id)
+    if not sheet_res and clean_phone:
+        sheet_res = query_google_sheet_user(clean_phone, req.machine_id)
+
+    if sheet_res and sheet_res.get("found"):
+        sheet_user = sheet_res.get("user") or sheet_res
+        existing_status = str(sheet_user.get("status", "Active")).strip()
+        # Save locally so user can log in with password
+        new_u = {
+            "id": sheet_user.get("machine_id") if sheet_user.get("machine_id") and not str(sheet_user.get("machine_id")).startswith("WEB-") else str(uuid.uuid4()),
+            "machine_id": req.machine_id or sheet_user.get("machine_id", ""),
+            "name": sheet_user.get("client_name") or req.name.strip(),
+            "email": clean_email,
+            "phone": clean_phone or sheet_user.get("mobile", ""),
+            "password": _hash(req.password),
+            "plan": "trial",
+            "plan_type": "free",
+            "status": existing_status.lower(),
+            "is_lifetime": False,
+            "expires_at": sheet_user.get("expiry_date"),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+        }
+        users.append(new_u)
+        save_users(users)
+        return JSONResponse({
+            "success": False,
+            "error_code": "USER_ALREADY_EXISTS",
+            "error": f"An account already exists (Status: {existing_status}). Please log in."
+        })
+
+    # 3. New user registration (safe append)
     new_user = {
         "id": str(uuid.uuid4()),
-        "name": req.name,
-        "email": req.email,
-        "phone": req.phone or "",
+        "machine_id": req.machine_id or "",
+        "name": req.name.strip(),
+        "email": clean_email,
+        "phone": clean_phone,
         "password": _hash(req.password),
         "plan": "trial",
         "plan_type": "free",
         "status": "pending",
         "is_lifetime": False,
-        "expires_at": None,
+        "expires_at": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S")
     }
     users.append(new_user)
     save_users(users)
+
     sync_to_google_sheet({
         "action": "register",
-        "machine_id": new_user.get("id", ""),
-        "client_name": req.name,
-        "name": req.name,
-        "email": req.email,
-        "phone": req.phone or "",
-        "mobile": req.phone or "",
+        "machine_id": req.machine_id or new_user["id"],
+        "client_name": req.name.strip(),
+        "name": req.name.strip(),
+        "email": clean_email,
+        "phone": clean_phone,
+        "mobile": clean_phone,
         "plan_type": "FREE TRIAL",
         "expiry_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
         "status": "Pending",
         "last_active": time.strftime("%Y-%m-%d %H:%M:%S")
     })
-    append_log(f"New user registered: {req.name} ({req.email}) — pending admin approval")
+    append_log(f"New user registered: {req.name} ({clean_email}) — pending admin approval")
     return JSONResponse({
         "success": True,
         "token": None,
-        "message": "Account successfully created! Admin permission / approval ke baad hi terminal access milega."
+        "message": "Account successfully created! Admin approval ke baad terminal access milega."
     })
 
 class VerifySessionRequest(BaseModel):
     user_id: Optional[str] = None
     email: Optional[str] = None
+    machine_id: Optional[str] = None
+    token: Optional[str] = None
 
 @app.post("/api/terminal/verify_session")
 async def verify_terminal_session(req: VerifySessionRequest):
@@ -677,29 +852,61 @@ async def verify_terminal_session(req: VerifySessionRequest):
     user = None
     if req.user_id:
         user = next((u for u in users if u.get("id") == req.user_id), None)
-    elif req.email:
-        user = next((u for u in users if u.get("email") == req.email), None)
+    if not user and req.email:
+        clean_em = req.email.strip().lower()
+        user = next((u for u in users if (u.get("email") or "").strip().lower() == clean_em), None)
+
+    # If not found locally or not active, check Google Sheet before kicking user out!
+    if not user or str(user.get("status", "")).strip().lower() != "active":
+        query_val = req.email or (user.get("email") if user else None) or req.user_id
+        if query_val:
+            sheet_res = query_google_sheet_user(query_val, req.machine_id)
+            if sheet_res and sheet_res.get("found"):
+                sheet_user = sheet_res.get("user") or sheet_res
+                sheet_st = str(sheet_user.get("status", "")).strip().lower()
+                if sheet_st == "active":
+                    if not user:
+                        user = {
+                            "id": req.user_id or str(uuid.uuid4()),
+                            "name": sheet_user.get("client_name") or sheet_user.get("name") or "User",
+                            "email": sheet_user.get("email") or req.email or "",
+                            "phone": sheet_user.get("mobile") or "",
+                            "password": "",
+                            "plan": "pro",
+                            "plan_type": "paid",
+                            "status": "active",
+                            "is_lifetime": False,
+                            "expires_at": sheet_user.get("expiry_date"),
+                            "created_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                        }
+                        users.append(user)
+                    else:
+                        user["status"] = "active"
+                        user["expires_at"] = sheet_user.get("expiry_date") or user.get("expires_at")
+                    save_users(users)
 
     if not user:
-        return JSONResponse({"valid": False, "reason": "user_not_found"})
+        return JSONResponse({"valid": False, "reason": "user_not_found", "error_code": "USER_NOT_FOUND"})
 
     # Check expiration
-    if is_user_expired(user) or user.get("status") == "expired":
+    if is_user_expired(user):
         user["status"] = "expired"
         save_users(users)
         return JSONResponse({
             "valid": False,
             "reason": "expired",
+            "error_code": "EXPIRED",
             "message": "Aapka plan ya 7-day free trial expire ho chuka hai. Kripya naya plan activate karein."
         })
 
-    if user.get("status") != "active":
-        return JSONResponse({"valid": False, "reason": user.get("status", "pending")})
+    st = str(user.get("status", "")).strip().lower()
+    if st != "active":
+        return JSONResponse({"valid": False, "reason": st, "error_code": f"ACCOUNT_{st.upper()}"})
 
     user["last_active"] = get_now_iso()
     active_terminal_users[user["id"]] = time.time()
 
-    days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False))
+    days_left = calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False), user.get("status", "active"))
 
     return JSONResponse({
         "valid": True,
@@ -743,7 +950,7 @@ async def terminal_heartbeat(req: HeartbeatRequest):
 
     return JSONResponse({
         "active": True,
-        "days_left": calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False))
+        "days_left": calculate_days_left(user.get("expires_at"), user.get("is_lifetime", False), user.get("status", "active"))
     })
 
 @app.post("/api/admin/login")
